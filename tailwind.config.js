@@ -3,7 +3,6 @@ module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
-  darkMode: 'class', // Abilita la modalità dark basata sulla classe CSS
   theme: {
     extend: {
       colors: {
@@ -47,10 +46,6 @@ module.exports = {
           light: '#f8fafc',
           card: '#ffffff',
           dark: '#f1f5f9',
-          // Colori dark mode
-          'dark-light': '#111827', // Sfondo principale
-          'dark-card': '#1f2937',  // Sfondo card
-          'dark-accent': '#0f172a', // Sfondo più scuro per elementi accentuati
         },
       },
       fontFamily: {
@@ -59,9 +54,7 @@ module.exports = {
       },
       boxShadow: {
         'card': '0 4px 20px -2px rgba(9, 30, 66, 0.08)',
-        'card-dark': '0 4px 20px -2px rgba(0, 0, 0, 0.25)',
         'button': '0 2px 4px 0 rgba(0,0,0,0.05)',
-        'button-dark': '0 2px 4px 0 rgba(0,0,0,0.3)',
         'active': '0 0 0 3px rgba(13, 144, 229, 0.25)',
       },
       borderRadius: {

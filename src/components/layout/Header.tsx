@@ -4,13 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut, Moon } from 'lucide-react';
 import { Button } from "../ui/button";
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import NotificationPopover from './NotificationPopover';
-import ThemeToggle from './ThemeToggle';
 
 const Header = () => {
   const { currentUser, logout } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -53,17 +50,16 @@ const Header = () => {
             className="flex items-center gap-2 focus:outline-none"
           >
             <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 bg-primary-400 rounded-lg animate-float opacity-50 blur-sm dark:bg-primary-700"></div>
-              <Moon className="h-5 w-5 text-primary-600 dark:text-primary-400 relative z-10" />
+              <div className="absolute inset-0 bg-primary-400 rounded-lg animate-float opacity-50 blur-sm"></div>
+              <Moon className="h-5 w-5 text-primary-600 relative z-10" />
             </div>
-            <h1 className="text-xl font-display font-semibold select-none">
+            <h1 className="text-xl font-display font-semibold text-gray-900 select-none">
               <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">My</span>
-              <span className="dark:text-white">Routine</span>
+              <span>Routine</span>
             </h1>
           </button>
           
           <div className="flex items-center space-x-3">
-            <ThemeToggle />
             <NotificationPopover />
             
             {currentUser && (
@@ -83,11 +79,11 @@ const Header = () => {
                     <img 
                       src={currentUser.photoURL} 
                       alt={currentUser.displayName || 'User'} 
-                      className="h-8 w-8 rounded-full object-cover border-2 border-white dark:border-gray-800"
+                      className="h-8 w-8 rounded-full object-cover border-2 border-white"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 dark:from-primary-800 dark:to-secondary-800 flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary-600" />
                     </div>
                   )}
                 </Button>
@@ -96,35 +92,35 @@ const Header = () => {
                   <div 
                     id="user-menu"
                     ref={menuRef}
-                    className="absolute right-0 mt-2 w-60 glass-effect rounded-2xl shadow-card dark:shadow-card-dark py-2 z-10 animate-in fade-in-50 duration-200"
+                    className="absolute right-0 mt-2 w-60 glass-effect rounded-2xl shadow-card py-2 z-10 animate-in fade-in-50 duration-200"
                   >
-                    <div className="px-4 py-3 border-b border-gray-100/50 dark:border-gray-700/50">
-                      <p className="text-sm font-medium truncate">
+                    <div className="px-4 py-3 border-b border-gray-100/50">
+                      <p className="text-sm font-medium text-gray-900 truncate">
                         {currentUser.displayName || 'Utente'}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <p className="text-xs text-gray-500 truncate">
                         {currentUser.email}
                       </p>
                     </div>
                     <div className="py-1">
                       <button
-                        className="flex items-center w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors rounded-lg mx-1"
+                        className="flex items-center w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-white/50 transition-colors rounded-lg mx-1"
                         onClick={() => {
                           navigate('/settings');
                           setShowUserMenu(false);
                         }}
                       >
-                        <Settings className="h-4 w-4 mr-2 text-primary-500 dark:text-primary-400" />
+                        <Settings className="h-4 w-4 mr-2 text-primary-500" />
                         Impostazioni
                       </button>
                       <button
-                        className="flex items-center w-full text-left px-4 py-2.5 text-sm text-tertiary-600 dark:text-tertiary-400 hover:bg-tertiary-50/50 dark:hover:bg-tertiary-900/30 transition-colors rounded-lg mx-1"
+                        className="flex items-center w-full text-left px-4 py-2.5 text-sm text-tertiary-600 hover:bg-tertiary-50/50 transition-colors rounded-lg mx-1"
                         onClick={() => {
                           handleLogout();
                           setShowUserMenu(false);
                         }}
                       >
-                        <LogOut className="h-4 w-4 mr-2 text-tertiary-500 dark:text-tertiary-400" />
+                        <LogOut className="h-4 w-4 mr-2 text-tertiary-500" />
                         Logout
                       </button>
                     </div>

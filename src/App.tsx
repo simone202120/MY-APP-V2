@@ -4,14 +4,13 @@ import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'reac
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
-import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import CalendarPage from './pages/CalendarPage';
 import StatisticsPage from './pages/StatisticsPage';
 import SettingsPage from './pages/SettingsPage';
-import CreateTaskPage from './pages/CreateTaskPage';
-import CreateCounterPage from './pages/CreateCounterPage';
+import CreateTaskPage from './pages/CreateTaskPage'; // Aggiungi questa import
+import CreateCounterPage from './pages/CreateCounterPage'; // Aggiungi questa import
 import { LoginForm, SignupForm, ResetPasswordForm } from './components/auth';
 import { LayoutProvider } from './context/LayoutContext';
 
@@ -95,6 +94,7 @@ const AnimatedRoutes = () => {
             </ProtectedRoute>
           } 
         />
+        {/* Aggiungi le nuove rotte */}
         <Route 
           path="/create-task" 
           element={
@@ -119,50 +119,48 @@ const AnimatedRoutes = () => {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppProvider>
-          <LayoutProvider>
-            <Router>
-              <Routes>
-                <Route 
-                  path="/login" 
-                  element={
-                    <PublicOnlyRoute>
-                      <LoginForm />
-                    </PublicOnlyRoute>
-                  } 
-                />
-                <Route 
-                  path="/signup" 
-                  element={
-                    <PublicOnlyRoute>
-                      <SignupForm />
-                    </PublicOnlyRoute>
-                  } 
-                />
-                <Route 
-                  path="/reset-password" 
-                  element={
-                    <PublicOnlyRoute>
-                      <ResetPasswordForm />
-                    </PublicOnlyRoute>
-                  } 
-                />
-                <Route 
-                  path="/*" 
-                  element={
-                    <Layout>
-                      <AnimatedRoutes />
-                    </Layout>
-                  } 
-                />
-              </Routes>
-            </Router>
-          </LayoutProvider>
-        </AppProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <AppProvider>
+        <LayoutProvider> {/* Aggiungi questo provider */}
+          <Router>
+            <Routes>
+              <Route 
+                path="/login" 
+                element={
+                  <PublicOnlyRoute>
+                    <LoginForm />
+                  </PublicOnlyRoute>
+                } 
+              />
+              <Route 
+                path="/signup" 
+                element={
+                  <PublicOnlyRoute>
+                    <SignupForm />
+                  </PublicOnlyRoute>
+                } 
+              />
+              <Route 
+                path="/reset-password" 
+                element={
+                  <PublicOnlyRoute>
+                    <ResetPasswordForm />
+                  </PublicOnlyRoute>
+                } 
+              />
+              <Route 
+                path="/*" 
+                element={
+                  <Layout>
+                    <AnimatedRoutes />
+                  </Layout>
+                } 
+              />
+            </Routes>
+          </Router>
+        </LayoutProvider>
+      </AppProvider>
+    </AuthProvider>
   );
 }
 
