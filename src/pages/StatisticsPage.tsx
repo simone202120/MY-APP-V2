@@ -9,7 +9,7 @@ import { useApp } from '../context/AppContext';
 import { 
   CheckCircle2, Clock, Target, ChevronDown, ChevronUp, 
   Calendar, Flame, TrendingUp, BarChart2, PieChart as PieChartIcon,
-  Activity, Lightbulb
+  Activity, Lightbulb, CalendarDays, ChevronRight
 } from 'lucide-react';
 import { format, parseISO, startOfWeek, 
   endOfWeek, isWithinInterval, differenceInDays, addDays, 
@@ -36,7 +36,8 @@ const StatisticsPage = () => {
     timeline: false,
     behavior: false,
     counters: false,
-    insights: false
+    insights: false,
+    periodDropdown: false
   });
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('week');
 
@@ -47,6 +48,22 @@ const StatisticsPage = () => {
       [section]: !prev[section]
     }));
   };
+  
+  // Gestione click fuori dal dropdown
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.period-dropdown') && expandedSections.periodDropdown) {
+      setExpandedSections(prev => ({ ...prev, periodDropdown: false }));
+    }
+  }, [expandedSections.periodDropdown]);
+  
+  // Aggiungiamo un event listener per chiudere il dropdown quando si clicca al di fuori
+  React.useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [handleClickOutside]);
 
   // Ottiene le date relative al periodo selezionato
   const periodDates = useMemo(() => {
@@ -426,45 +443,74 @@ const StatisticsPage = () => {
     <div className="space-y-6 pb-16">
       {/* Selettore periodo */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 sticky top-0 z-10">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-800">Statistiche</h1>
-          <div className="grid grid-cols-4 w-full sm:w-auto sm:flex sm:space-x-2 gap-1">
-            <Button 
-              variant={selectedPeriod === 'day' ? 'default' : 'outline'}
-              size="sm"
-              className="px-2 sm:px-3"
-              onClick={() => setSelectedPeriod('day')}
+          <div>
+            <div
+              className="relative period-dropdown"
             >
-              <span className="sm:hidden">G</span>
-              <span className="hidden sm:inline">Giorno</span>
-            </Button>
-            <Button 
-              variant={selectedPeriod === 'week' ? 'default' : 'outline'}
-              size="sm"
-              className="px-2 sm:px-3"
-              onClick={() => setSelectedPeriod('week')}
-            >
-              <span className="sm:hidden">S</span>
-              <span className="hidden sm:inline">Settimana</span>
-            </Button>
-            <Button 
-              variant={selectedPeriod === 'month' ? 'default' : 'outline'}
-              size="sm"
-              className="px-2 sm:px-3"
-              onClick={() => setSelectedPeriod('month')}
-            >
-              <span className="sm:hidden">M</span>
-              <span className="hidden sm:inline">Mese</span>
-            </Button>
-            <Button 
-              variant={selectedPeriod === 'year' ? 'default' : 'outline'}
-              size="sm"
-              className="px-2 sm:px-3"
-              onClick={() => setSelectedPeriod('year')}
-            >
-              <span className="sm:hidden">A</span>
-              <span className="hidden sm:inline">Anno</span>
-            </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2 px-3 period-dropdown" 
+                onClick={() => setExpandedSections(prev => ({...prev, periodDropdown: !prev.periodDropdown}))}
+              >
+                <CalendarDays className="h-4 w-4" />
+                <span>{
+                  selectedPeriod === 'day' ? 'Giorno' :
+                  selectedPeriod === 'week' ? 'Settimana' :
+                  selectedPeriod === 'month' ? 'Mese' : 'Anno'
+                }</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              
+              {expandedSections.periodDropdown && (
+                <div className="absolute right-0 mt-1 w-36 rounded-md bg-white shadow-lg border border-gray-100 z-20">
+                  <div className="py-1">
+                    <button
+                      className={`flex items-center w-full px-4 py-2 text-sm ${selectedPeriod === 'day' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} hover:bg-gray-50`}
+                      onClick={() => {
+                        setSelectedPeriod('day');
+                        setExpandedSections(prev => ({...prev, periodDropdown: false}));
+                      }}
+                    >
+                      {selectedPeriod === 'day' && <ChevronRight className="h-4 w-4 mr-1" />}
+                      Giorno
+                    </button>
+                    <button
+                      className={`flex items-center w-full px-4 py-2 text-sm ${selectedPeriod === 'week' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} hover:bg-gray-50`}
+                      onClick={() => {
+                        setSelectedPeriod('week');
+                        setExpandedSections(prev => ({...prev, periodDropdown: false}));
+                      }}
+                    >
+                      {selectedPeriod === 'week' && <ChevronRight className="h-4 w-4 mr-1" />}
+                      Settimana
+                    </button>
+                    <button
+                      className={`flex items-center w-full px-4 py-2 text-sm ${selectedPeriod === 'month' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} hover:bg-gray-50`}
+                      onClick={() => {
+                        setSelectedPeriod('month');
+                        setExpandedSections(prev => ({...prev, periodDropdown: false}));
+                      }}
+                    >
+                      {selectedPeriod === 'month' && <ChevronRight className="h-4 w-4 mr-1" />}
+                      Mese
+                    </button>
+                    <button
+                      className={`flex items-center w-full px-4 py-2 text-sm ${selectedPeriod === 'year' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} hover:bg-gray-50`}
+                      onClick={() => {
+                        setSelectedPeriod('year');
+                        setExpandedSections(prev => ({...prev, periodDropdown: false}));
+                      }}
+                    >
+                      {selectedPeriod === 'year' && <ChevronRight className="h-4 w-4 mr-1" />}
+                      Anno
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <p className="text-sm text-gray-500 mt-1">{getPeriodLabel()}</p>

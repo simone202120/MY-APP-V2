@@ -107,7 +107,7 @@ const Navigation = () => {
           )}
         </AnimatePresence>
 
-        <div className="glass-effect rounded-t-2xl pt-6 pb-2 px-6 shadow-card mb-safe">
+        <div className="glass-effect rounded-t-2xl pt-6 pb-2 px-3 shadow-card mb-safe">
           {/* Pulsante centrale di creazione */}
           <div className="absolute left-1/2 -translate-x-1/2 -top-5">
             <Button
@@ -123,8 +123,8 @@ const Navigation = () => {
             </Button>
           </div>
 
-          <div className="flex justify-between items-center pt-1">
-            {/* Tab di navigazione */}
+          <div className="flex justify-evenly items-center">
+            {/* Tab di navigazione - Solo icone */}
             {navItems.map(({ id, icon: Icon, label, gradient, ariaLabel }, index) => {
               const isActive = location.pathname === id;
               
@@ -132,7 +132,7 @@ const Navigation = () => {
                 <Button
                   key={id}
                   variant="ghost"
-                  className={`flex flex-col items-center justify-center py-1.5 px-3 relative
+                  className={`flex items-center justify-center py-1 relative min-w-[40px] h-10
                     ${isActive ? 'text-gray-900' : 'text-gray-500'}
                   `}
                   onClick={() => navigate(id)}
@@ -142,9 +142,9 @@ const Navigation = () => {
                 >
                   <div className="relative">
                     {isActive && (
-                      <div className={`absolute -inset-1 bg-gradient-to-br ${gradient[0]} ${gradient[1]} rounded-full opacity-10 animate-breathe`}></div>
+                      <div className={`absolute -inset-2 bg-gradient-to-br ${gradient[0]} ${gradient[1]} rounded-full opacity-10 animate-breathe`}></div>
                     )}
-                    <div className="relative h-6 w-6 flex items-center justify-center">
+                    <div className="relative h-7 w-7 flex items-center justify-center">
                       {isActive ? (
                         <div className={`absolute inset-0 bg-gradient-to-br ${gradient[0]} ${gradient[1]} rounded-full`}>
                           <Icon className="w-full h-full p-1.5 text-white" strokeWidth={2} />
@@ -154,9 +154,6 @@ const Navigation = () => {
                       )}
                     </div>
                   </div>
-                  <span className={`text-[10px] font-medium transition-colors ${isActive ? 'text-gray-900' : 'text-gray-500'} sm:text-xs`}>
-                    {label}
-                  </span>
                 </Button>
               );
             })}
