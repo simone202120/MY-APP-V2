@@ -1,14 +1,15 @@
 // pages/HomePage.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, ChevronDown, ChevronUp, Clock, CheckCircle, PlusCircle } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import TaskItem from '../components/tasks/TaskItem';
 import CounterItem from '../components/counters/CounterItem';
 import { useApp } from '../context/AppContext';
-import { format } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { isTaskScheduledForDate, isTaskCompletedForDate } from '../utils/TaskUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -22,6 +23,19 @@ const HomePage = () => {
     decrementCounter,
     deleteCounter
   } = useApp();
+  
+  // Stato per le sezioni collassabili e la visualizzazione rapida
+  const [expandedSections, setExpandedSections] = useState({
+    tasks: true,
+    dailyCounters: true,
+    totalCounters: true
+  });
+  
+  // Stato per i quick actions
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  
+  // Stato per tenere traccia dell'ultimo task completato per mostrare un feedback
+  const [lastCompleted, setLastCompleted] = useState<string | null>(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const currentDate = new Date();
@@ -36,6 +50,13 @@ const HomePage = () => {
     }
     return false;
   });
+  
+  // Ordina i task: prima quelli non completati, poi quelli completati
+  const sortedTasks = [...todayTasks].sort((a, b) => {
+    const aCompleted = a.type === 'oneTime' ? a.isCompleted : isTaskCompletedForDate(a, today);
+    const bCompleted = b.type === 'oneTime' ? b.isCompleted : isTaskCompletedForDate(b, today);
+    return Number(aCompleted) - Number(bCompleted);
+  });
 
   // Aggiornato per usare isTaskCompletedForDate
   const completedTodayTasks = todayTasks.filter(task => {
@@ -48,143 +69,327 @@ const HomePage = () => {
   const completionPercentage = todayTasks.length > 0 
     ? Math.round((completedTodayTasks.length / todayTasks.length) * 100) 
     : 0;
+    
+  // Funzione wrapper per toggle task con feedback
+  const handleToggleTask = (taskId: string, date?: string) => {
+    toggleTaskComplete(taskId, date);
+    setLastCompleted(taskId);
+    
+    // Rimuovi la notifica dopo 2 secondi
+    setTimeout(() => {
+      setLastCompleted(null);
+    }, 2000);
+  };
+  
+  // Funzione per tornare all'inizio quando si completa un task
+  useEffect(() => {
+    if (lastCompleted) {
+      // Torna all'inizio della pagina con uno scroll fluido
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [lastCompleted]);
+  
+  // Toggle per le sezioni espandibili
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Progress Summary */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
+    <div className="space-y-6 pb-20">
+      {/* Notification Toast per feedback completamento */}
+      <AnimatePresence>
+        {lastCompleted && (
+          <motion.div 
+            className="fixed top-4 left-4 right-4 z-50 bg-green-50 border border-green-200 p-3 rounded-lg shadow-lg flex items-center"
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            transition={{ type: "spring", damping: 15 }}
+          >
+            <CheckCircle className="text-green-500 mr-2 h-5 w-5" />
+            <p className="text-green-800 text-sm font-medium">Impegno completato!</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Progress Summary - Sempre visibile */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative">
+        <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">Il tuo progresso</h2>
             <p className="text-sm text-gray-500">
               {format(new Date(), 'EEEE d MMMM', { locale: it })}
             </p>
           </div>
-          <div className="h-12 w-12 bg-primary-50 rounded-full flex items-center justify-center">
-            <Sparkles className="h-6 w-6 text-primary-500" />
+          <div className="h-16 w-16 bg-primary-50 rounded-full flex items-center justify-center">
+            <div className="relative">
+              <svg className="h-12 w-12">
+                <circle
+                  className="text-gray-200"
+                  strokeWidth="5"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r="20"
+                  cx="24"
+                  cy="24"
+                />
+                <circle
+                  className="text-primary-500"
+                  strokeWidth="5"
+                  strokeDasharray={125}
+                  strokeDashoffset={125 - (125 * completionPercentage) / 100}
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="transparent"
+                  r="20"
+                  cx="24"
+                  cy="24"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                {completionPercentage}%
+              </span>
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Completamento</span>
-            <span className="text-sm font-medium">{completionPercentage}%</span>
-          </div>
-          <div className="h-2 bg-gray-100 rounded-full">
-            <div 
-              className="h-full bg-primary-500 rounded-full transition-all duration-300"
-              style={{ width: `${completionPercentage}%` }}
-            />
-          </div>
+        
+        {/* Quick Action FAB - Pulsante per accesso rapido */}
+        <div className="fixed right-4 bottom-24 z-40">
+          <AnimatePresence>
+            {showQuickActions && (
+              <motion.div
+                className="absolute bottom-full right-0 mb-2 space-y-2 rounded-lg bg-white shadow-lg p-2 border border-gray-100"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+              >
+                <Button
+                  size="icon-sm"
+                  className="bg-primary-100 hover:bg-primary-200 text-primary-700 flex items-center justify-center w-12 h-12 rounded-full"
+                  onClick={() => {
+                    setShowQuickActions(false);
+                    navigate('/create-task');
+                  }}
+                >
+                  <div className="flex flex-col items-center">
+                    <Clock className="h-5 w-5" />
+                    <span className="text-[10px] mt-0.5">Impegno</span>
+                  </div>
+                </Button>
+                <Button
+                  size="icon-sm"
+                  className="bg-secondary-100 hover:bg-secondary-200 text-secondary-700 flex items-center justify-center w-12 h-12 rounded-full"
+                  onClick={() => {
+                    setShowQuickActions(false);
+                    navigate('/create-counter');
+                  }}
+                >
+                  <div className="flex flex-col items-center">
+                    <Plus className="h-5 w-5" />
+                    <span className="text-[10px] mt-0.5">Contatore</span>
+                  </div>
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          <Button
+            size="icon-md"
+            rounded="full"
+            className="shadow-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white"
+            onClick={() => setShowQuickActions(!showQuickActions)}
+          >
+            {showQuickActions ? (
+              <motion.div
+                animate={{ rotate: 45 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Plus className="h-6 w-6" />
+              </motion.div>
+            ) : (
+              <PlusCircle className="h-6 w-6" />
+            )}
+          </Button>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Button 
-          className="flex items-center justify-center gap-2 h-auto py-3"
-          onClick={() => navigate('/create-task')}
+      {/* Tasks Section - Con intestazione collassabile */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div 
+          className="p-4 flex justify-between items-center cursor-pointer" 
+          onClick={() => toggleSection('tasks')}
         >
-          <Plus className="h-5 w-5" />
-          <span>Impegno</span>
-        </Button>
-        <Button 
-          className="flex items-center justify-center gap-2 h-auto py-3"
-          onClick={() => navigate('/create-counter')}
+          <div className="flex items-center">
+            <h2 className="text-lg font-semibold">I tuoi impegni oggi</h2>
+            <span className="ml-2 text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">
+              {completedTodayTasks.length}/{todayTasks.length}
+            </span>
+          </div>
+          <Button variant="ghost" size="icon-sm" className="text-gray-500">
+            {expandedSections.tasks ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </Button>
+        </div>
+        
+        <AnimatePresence>
+          {expandedSections.tasks && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-gray-100"
+            >
+              <div className="p-4 space-y-3">
+                {sortedTasks.length > 0 ? (
+                  sortedTasks.map(task => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onComplete={handleToggleTask}
+                      onDelete={deleteTask}
+                      onDeleteSingleOccurrence={deleteRoutineOccurrence}
+                      currentDate={today}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-2">Nessun impegno per oggi</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => navigate('/create-task')}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Aggiungi impegno
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Contatori Giornalieri - Con intestazione collassabile */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div 
+          className="p-4 flex justify-between items-center cursor-pointer" 
+          onClick={() => toggleSection('dailyCounters')}
         >
-          <Plus className="h-5 w-5" />
-          <span>Contatore</span>
-        </Button>
+          <div className="flex items-center">
+            <h2 className="text-lg font-semibold">Contatori Giornalieri</h2>
+            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
+              {counters.filter(c => c.type === 'daily').length}
+            </span>
+          </div>
+          <Button variant="ghost" size="icon-sm" className="text-gray-500">
+            {expandedSections.dailyCounters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </Button>
+        </div>
+        
+        <AnimatePresence>
+          {expandedSections.dailyCounters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-gray-100"
+            >
+              <div className="p-4 space-y-3">
+                {counters.filter(c => c.type === 'daily').length > 0 ? (
+                  counters
+                    .filter(counter => counter.type === 'daily')
+                    .map(counter => (
+                      <CounterItem
+                        key={counter.id}
+                        counter={counter}
+                        onIncrement={incrementCounter}
+                        onDecrement={decrementCounter}
+                        onDelete={deleteCounter}
+                      />
+                    ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-2">Nessun contatore giornaliero</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => navigate('/create-counter')}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Aggiungi contatore
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Tasks Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">I tuoi impegni oggi</h2>
-          <span className="text-sm text-gray-500">
-            {completedTodayTasks.length}/{todayTasks.length}
-          </span>
+      {/* Contatori Totali - Con intestazione collassabile */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div 
+          className="p-4 flex justify-between items-center cursor-pointer" 
+          onClick={() => toggleSection('totalCounters')}
+        >
+          <div className="flex items-center">
+            <h2 className="text-lg font-semibold">Contatori Totali</h2>
+            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
+              {counters.filter(c => c.type === 'total').length}
+            </span>
+          </div>
+          <Button variant="ghost" size="icon-sm" className="text-gray-500">
+            {expandedSections.totalCounters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </Button>
         </div>
-        <div className="space-y-3">
-          {todayTasks.map(task => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onComplete={toggleTaskComplete}
-              onDelete={deleteTask}
-              onDeleteSingleOccurrence={deleteRoutineOccurrence}
-              currentDate={today}
-            />
-          ))}
-          {todayTasks.length === 0 && (
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
-              <p className="text-gray-500">Nessun impegno per oggi</p>
-              <Button 
-                variant="link" 
-                className="mt-2"
-                onClick={() => navigate('/create-task')}
-              >
-                Aggiungi il tuo primo impegno
-              </Button>
-            </div>
+        
+        <AnimatePresence>
+          {expandedSections.totalCounters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-gray-100"
+            >
+              <div className="p-4 space-y-3">
+                {counters.filter(c => c.type === 'total').length > 0 ? (
+                  counters
+                    .filter(counter => counter.type === 'total')
+                    .map(counter => (
+                      <CounterItem
+                        key={counter.id}
+                        counter={counter}
+                        onIncrement={incrementCounter}
+                        onDecrement={decrementCounter}
+                        onDelete={deleteCounter}
+                      />
+                    ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-2">Nessun contatore totale</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => navigate('/create-counter')}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Aggiungi contatore
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
-        </div>
-      </div>
-
-      {/* Counters Sections */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Contatori Giornalieri</h2>
-        <div className="space-y-3">
-          {counters
-            .filter(counter => counter.type === 'daily')
-            .map(counter => (
-              <CounterItem
-                key={counter.id}
-                counter={counter}
-                onIncrement={incrementCounter}
-                onDecrement={decrementCounter}
-                onDelete={deleteCounter}
-              />
-            ))}
-          {counters.filter(c => c.type === 'daily').length === 0 && (
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
-              <p className="text-gray-500">Nessun contatore giornaliero</p>
-              <Button 
-                variant="link" 
-                className="mt-2"
-                onClick={() => navigate('/create-counter')}
-              >
-                Aggiungi il tuo primo contatore
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <h2 className="text-lg font-semibold">Contatori Totali</h2>
-        <div className="space-y-3">
-          {counters
-            .filter(counter => counter.type === 'total')
-            .map(counter => (
-              <CounterItem
-                key={counter.id}
-                counter={counter}
-                onIncrement={incrementCounter}
-                onDecrement={decrementCounter}
-                onDelete={deleteCounter}
-              />
-            ))}
-          {counters.filter(c => c.type === 'total').length === 0 && (
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 text-center">
-              <p className="text-gray-500">Nessun contatore totale</p>
-              <Button 
-                variant="link" 
-                className="mt-2"
-                onClick={() => navigate('/create-counter')}
-              >
-                Aggiungi il tuo primo contatore
-              </Button>
-            </div>
-          )}
-        </div>
+        </AnimatePresence>
       </div>
     </div>
   );
