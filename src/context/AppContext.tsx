@@ -16,9 +16,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from './AuthContext';
-import { Task, Counter, TaskType, CounterType, CounterEntry } from '../types';
+import { Task, Counter, TaskType, CounterType, CounterEntry, Notification } from '../types';
 import { format, isToday, startOfDay } from 'date-fns';
 import NotificationService from '../services/NotificationService';
+import NotificationEntriesService from '../services/NotificationEntriesService';
 import { CounterEntriesService } from '../services/CounterEntriesService';
 
 interface AppContextType {
@@ -37,6 +38,11 @@ interface AppContextType {
   resetAllData: () => Promise<void>;
   deleteRoutineOccurrence: (taskId: string, date: string) => Promise<void>;
   getCounterHistory: (counterId: string) => Promise<CounterEntry[]>;
+  // Aggiunte per il sistema di notifiche in-app
+  createSystemNotification: (title: string, message: string) => Promise<string | null>;
+  createTaskNotification: (title: string, message: string, taskId: string) => Promise<string | null>;
+  createCounterNotification: (title: string, message: string, counterId: string) => Promise<string | null>;
+  getUnreadNotificationsCount: () => Promise<number>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -56,8 +62,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
   
-  // Inizializza il servizio di notifiche
+  // Inizializza i servizi di notifiche
   const notificationService = NotificationService.getInstance();
+  const appNotificationService = NotificationEntriesService.getInstance();
 
   // Salva i contatori giornalieri attuali nel database
   const saveCounterEntries = async () => {
@@ -336,6 +343,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Se il task è stato completato, cancella le sue notifiche
       if (newIsCompleted && taskToToggle.notifyBefore) {
         notificationService.clearTaskNotification(taskId);
+        
+        // Crea una notifica in-app per il completamento del task
+        await appNotificationService.createTaskNotification(
+          currentUser.uid,
+          'Task completato',
+          `Hai completato "${taskToToggle.title}"`,
+          taskId
+        );
       }
     } 
     else if (taskToToggle.type === 'routine' && specificDate) {
@@ -355,6 +370,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await updateDoc(taskRef, {
           completedDates: arrayUnion(specificDate)
         });
+        
+        // Crea una notifica in-app per il completamento del task
+        await appNotificationService.createTaskNotification(
+          currentUser.uid,
+          'Routine completata',
+          `Hai completato "${taskToToggle.title}" per oggi`,
+          taskId
+        );
       }
     }
   };
@@ -402,10 +425,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const counterToIncrement = counters.find(counter => counter.id === counterId);
     if (!counterToIncrement) return;
     
+    const newValue = counterToIncrement.currentValue + 1;
     const counterRef = doc(db, 'counters', counterId);
     await updateDoc(counterRef, {
-      currentValue: counterToIncrement.currentValue + 1
+      currentValue: newValue
     });
+
+    // Verifica se è stato raggiunto l'obiettivo
+    if (counterToIncrement.goal && newValue >= counterToIncrement.goal) {
+      // Crea una notifica per l'obiettivo raggiunto
+      await appNotificationService.createCounterNotification(
+        currentUser.uid,
+        'Obiettivo raggiunto!',
+        `Hai raggiunto l'obiettivo di ${counterToIncrement.goal} per "${counterToIncrement.name}"`,
+        counterId
+      );
+    }
   };
 
   const decrementCounter = async (counterId: string) => {
@@ -450,6 +485,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await CounterEntriesService.getCounterEntriesById(counterId, currentUser.uid);
   };
 
+  // Implementazione metodi per le notifiche in-app
+  const createSystemNotification = async (title: string, message: string): Promise<string | null> => {
+    if (!currentUser) return null;
+    try {
+      return await appNotificationService.createSystemNotification(
+        currentUser.uid,
+        title,
+        message
+      );
+    } catch (error) {
+      console.error('Errore durante la creazione della notifica di sistema:', error);
+      return null;
+    }
+  };
+
+  const createTaskNotification = async (title: string, message: string, taskId: string): Promise<string | null> => {
+    if (!currentUser) return null;
+    try {
+      return await appNotificationService.createTaskNotification(
+        currentUser.uid,
+        title,
+        message,
+        taskId
+      );
+    } catch (error) {
+      console.error('Errore durante la creazione della notifica di task:', error);
+      return null;
+    }
+  };
+
+  const createCounterNotification = async (title: string, message: string, counterId: string): Promise<string | null> => {
+    if (!currentUser) return null;
+    try {
+      return await appNotificationService.createCounterNotification(
+        currentUser.uid,
+        title,
+        message,
+        counterId
+      );
+    } catch (error) {
+      console.error('Errore durante la creazione della notifica di contatore:', error);
+      return null;
+    }
+  };
+
+  const getUnreadNotificationsCount = async (): Promise<number> => {
+    if (!currentUser) return 0;
+    try {
+      return await appNotificationService.getUnreadCount(currentUser.uid);
+    } catch (error) {
+      console.error('Errore durante il recupero del conteggio delle notifiche non lette:', error);
+      return 0;
+    }
+  };
+
   const value = {
     tasks,
     counters,
@@ -465,7 +555,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     resetDailyCounters,
     resetAllData,
     deleteRoutineOccurrence,
-    getCounterHistory
+    getCounterHistory,
+    // Nuovi metodi per le notifiche
+    createSystemNotification,
+    createTaskNotification,
+    createCounterNotification,
+    getUnreadNotificationsCount
   };
 
   return (

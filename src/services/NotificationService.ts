@@ -2,6 +2,11 @@
 import { Task, NotificationTimeUnit } from '../types';
 import { addDays, format, isAfter, isBefore, getDate, parseISO } from 'date-fns';
 
+/**
+ * Servizio per la gestione delle notifiche browser
+ * Nota: questo servizio gestisce le notifiche del browser, ed è diverso
+ * dal servizio per le notifiche in-app implementato in AppNotificationService.ts
+ */
 class NotificationService {
   private static instance: NotificationService;
   private notificationsEnabled: boolean = false;

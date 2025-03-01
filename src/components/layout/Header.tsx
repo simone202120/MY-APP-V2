@@ -1,9 +1,10 @@
 // components/layout/Header.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, Settings, LogOut, Moon } from 'lucide-react';
+import { User, Settings, LogOut, Moon } from 'lucide-react';
 import { Button } from "../ui/button";
 import { useAuth } from '../../context/AuthContext';
+import NotificationPopover from './NotificationPopover';
 
 const Header = () => {
   const { currentUser, logout } = useAuth();
@@ -59,19 +60,7 @@ const Header = () => {
           </button>
           
           <div className="flex items-center space-x-3">
-            <Button 
-              variant="glass" 
-              size="icon-sm" 
-              rounded="full"
-              aria-label="Notifiche"
-              className="relative"
-              hasAnimation={true}
-            >
-              <Bell className="h-5 w-5 text-primary-500" />
-              <span className="absolute -top-1 -right-1 bg-tertiary-500 rounded-full w-4 h-4 flex items-center justify-center text-white text-[10px] font-bold animate-pulse">
-                2
-              </span>
-            </Button>
+            <NotificationPopover />
             
             {currentUser && (
               <div className="relative">

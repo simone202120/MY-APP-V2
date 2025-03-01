@@ -13,6 +13,9 @@ export type TimeUnit = 'days' | 'weeks' | 'months';
 // Tipi di unità di tempo per le notifiche
 export type NotificationTimeUnit = 'minutes' | 'hours';
 
+// Tipi di notifiche in-app
+export type NotificationType = 'task' | 'counter' | 'system';
+
 // Estendi l'interfaccia Task se necessario
 export interface Task {
   id: string;
@@ -60,4 +63,16 @@ export interface CounterEntry {
   value: number;
   name?: string;
   timestamp?: any; // Timestamp di Firestore
+}
+
+// Interfaccia per le notifiche in-app
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  timestamp: any; // Timestamp di Firestore
+  read: boolean;
+  type: NotificationType;
+  relatedId?: string; // ID dell'oggetto correlato (task, counter, etc)
 }
