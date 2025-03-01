@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Trash2, RefreshCw, LogOut, User, Lock } from 'lucide-react';
+import { Trash2, RefreshCw, LogOut, User, Lock, Moon, Sun } from 'lucide-react';
+import ThemeToggle from '../components/layout/ThemeToggle';
 
 const SettingsPage = () => {
   const { resetDailyCounters, tasks, counters, resetAllData, isLoading } = useApp();
@@ -61,7 +63,7 @@ const SettingsPage = () => {
       <h1 className="text-2xl font-bold mb-6">Impostazioni</h1>
 
       {/* Profilo utente */}
-      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
+      <div className="bg-white dark:bg-background-dark-card rounded-lg p-4 mb-6 shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700">
         <h2 className="text-lg font-semibold mb-3">Profilo Utente</h2>
         
         {updateError && (
@@ -131,8 +133,22 @@ const SettingsPage = () => {
         )}
       </div>
 
+      {/* Aspetto e tema */}
+      <div className="bg-white dark:bg-background-dark-card rounded-lg p-4 mb-6 shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700">
+        <h2 className="text-lg font-semibold mb-3">Aspetto</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Tema</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Scegli tra tema chiaro e scuro
+            </p>
+          </div>
+          <ThemeToggle showLabel={true} />
+        </div>
+      </div>
+      
       {/* Statistiche generali */}
-      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
+      <div className="bg-white dark:bg-background-dark-card rounded-lg p-4 mb-6 shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700">
         <h2 className="text-lg font-semibold mb-3">Statistiche</h2>
         <div className="space-y-2">
           <p>Impegni totali: {tasks.length}</p>
@@ -145,16 +161,16 @@ const SettingsPage = () => {
       <div className="space-y-4">
         <motion.div
           whileTap={{ scale: 0.98 }}
-          className="bg-white rounded-lg shadow-sm overflow-hidden"
+          className="bg-white dark:bg-background-dark-card rounded-lg shadow-sm dark:shadow-card-dark overflow-hidden border border-gray-100 dark:border-gray-700"
         >
           <Button
             variant="ghost"
-            className="w-full p-4 flex items-center justify-between text-left"
+            className="w-full p-4 flex items-center justify-between text-left dark:text-white"
             onClick={() => resetDailyCounters()}
           >
             <div>
               <p className="font-medium">Reset Contatori Giornalieri</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Azzera tutti i contatori giornalieri
               </p>
             </div>
@@ -164,41 +180,41 @@ const SettingsPage = () => {
 
         <motion.div
           whileTap={{ scale: 0.98 }}
-          className="bg-white rounded-lg shadow-sm overflow-hidden"
+          className="bg-white dark:bg-background-dark-card rounded-lg shadow-sm dark:shadow-card-dark overflow-hidden border border-gray-100 dark:border-gray-700"
         >
           <Button
             variant="ghost"
             className={`w-full p-4 flex items-center justify-between text-left ${
-              showConfirmDelete ? 'bg-red-50' : ''
+              showConfirmDelete ? 'bg-red-50 dark:bg-red-900/20' : ''
             }`}
             onClick={handleDeleteAll}
           >
             <div>
-              <p className="font-medium text-red-600">
+              <p className="font-medium text-red-600 dark:text-red-400">
                 {showConfirmDelete ? 'Conferma eliminazione' : 'Elimina tutti i dati'}
               </p>
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-red-400 dark:text-red-300">
                 {showConfirmDelete 
                   ? 'Clicca di nuovo per confermare' 
                   : 'Rimuovi tutti gli impegni e i contatori'}
               </p>
             </div>
-            <Trash2 className="h-5 w-5 text-red-600" />
+            <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
           </Button>
         </motion.div>
 
         <motion.div
           whileTap={{ scale: 0.98 }}
-          className="bg-white rounded-lg shadow-sm overflow-hidden"
+          className="bg-white dark:bg-background-dark-card rounded-lg shadow-sm dark:shadow-card-dark overflow-hidden border border-gray-100 dark:border-gray-700"
         >
           <Button
             variant="ghost"
-            className="w-full p-4 flex items-center justify-between text-left"
+            className="w-full p-4 flex items-center justify-between text-left dark:text-white"
             onClick={handleLogout}
           >
             <div>
               <p className="font-medium">Esci</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Disconnetti questo account
               </p>
             </div>
@@ -207,7 +223,7 @@ const SettingsPage = () => {
         </motion.div>
       </div>
 
-      <div className="mt-8 text-center text-sm text-gray-500">
+      <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
         <p>MyRoutine v1.0.0</p>
         <p className="mt-1">Sviluppato con ❤️</p>
       </div>

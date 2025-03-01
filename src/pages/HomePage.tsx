@@ -116,19 +116,19 @@ const HomePage = () => {
       </AnimatePresence>
 
       {/* Progress Summary - Sempre visibile */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative">
+      <div className="bg-white dark:bg-background-dark-card rounded-xl p-4 shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700 relative">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">Il tuo progresso</h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {format(new Date(), 'EEEE d MMMM', { locale: it })}
             </p>
           </div>
-          <div className="h-16 w-16 bg-primary-50 rounded-full flex items-center justify-center">
+          <div className="h-16 w-16 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center">
             <div className="relative">
               <svg className="h-12 w-12">
                 <circle
-                  className="text-gray-200"
+                  className="text-gray-200 dark:text-gray-700"
                   strokeWidth="5"
                   stroke="currentColor"
                   fill="transparent"
@@ -137,7 +137,7 @@ const HomePage = () => {
                   cy="24"
                 />
                 <circle
-                  className="text-primary-500"
+                  className="text-primary-500 dark:text-primary-400"
                   strokeWidth="5"
                   strokeDasharray={125}
                   strokeDashoffset={125 - (125 * completionPercentage) / 100}
@@ -149,49 +149,51 @@ const HomePage = () => {
                   cy="24"
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold dark:text-white">
                 {completionPercentage}%
               </span>
             </div>
           </div>
         </div>
         
-        {/* Quick Action FAB - Pulsante per accesso rapido */}
+        {/* Unified Quick Action FAB */}
         <div className="fixed right-4 bottom-24 z-40">
           <AnimatePresence>
             {showQuickActions && (
               <motion.div
-                className="absolute bottom-full right-0 mb-2 space-y-2 rounded-lg bg-white shadow-lg p-2 border border-gray-100"
+                className="absolute bottom-full right-0 mb-2 rounded-xl bg-white dark:bg-background-dark-card shadow-lg dark:shadow-card-dark p-3 border border-gray-100 dark:border-gray-700"
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", damping: 20 }}
               >
-                <Button
-                  size="icon-sm"
-                  className="bg-primary-100 hover:bg-primary-200 text-primary-700 flex items-center justify-center w-12 h-12 rounded-full"
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    navigate('/create-task');
-                  }}
-                >
-                  <div className="flex flex-col items-center">
-                    <Clock className="h-5 w-5" />
-                    <span className="text-[10px] mt-0.5">Impegno</span>
-                  </div>
-                </Button>
-                <Button
-                  size="icon-sm"
-                  className="bg-secondary-100 hover:bg-secondary-200 text-secondary-700 flex items-center justify-center w-12 h-12 rounded-full"
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    navigate('/create-counter');
-                  }}
-                >
-                  <div className="flex flex-col items-center">
-                    <Plus className="h-5 w-5" />
-                    <span className="text-[10px] mt-0.5">Contatore</span>
-                  </div>
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    className="flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                    onClick={() => {
+                      setShowQuickActions(false);
+                      navigate('/create-task');
+                    }}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-primary-100 dark:bg-primary-800/40 text-primary-600 dark:text-primary-400">
+                      <Clock className="h-4 w-4" />
+                    </div>
+                    <span>Aggiungi impegno</span>
+                  </button>
+                  
+                  <button
+                    className="flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-secondary-50 dark:hover:bg-secondary-900/20 rounded-lg transition-colors"
+                    onClick={() => {
+                      setShowQuickActions(false);
+                      navigate('/create-counter');
+                    }}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary-100 dark:bg-secondary-800/40 text-secondary-600 dark:text-secondary-400">
+                      <Plus className="h-4 w-4" />
+                    </div>
+                    <span>Aggiungi contatore</span>
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -199,7 +201,7 @@ const HomePage = () => {
           <Button
             size="icon-md"
             rounded="full"
-            className="shadow-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white"
+            className="shadow-lg bg-gradient-to-r from-primary-500 to-secondary-500 dark:from-primary-600 dark:to-secondary-600 text-white"
             onClick={() => setShowQuickActions(!showQuickActions)}
           >
             {showQuickActions ? (
@@ -217,18 +219,18 @@ const HomePage = () => {
       </div>
 
       {/* Tasks Section - Con intestazione collassabile */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-background-dark-card rounded-xl shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div 
           className="p-4 flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('tasks')}
         >
           <div className="flex items-center">
             <h2 className="text-lg font-semibold">I tuoi impegni oggi</h2>
-            <span className="ml-2 text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">
+            <span className="ml-2 text-sm bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full">
               {completedTodayTasks.length}/{todayTasks.length}
             </span>
           </div>
-          <Button variant="ghost" size="icon-sm" className="text-gray-500">
+          <Button variant="ghost" size="icon-sm" className="text-gray-500 dark:text-gray-400">
             {expandedSections.tasks ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </Button>
         </div>
@@ -240,7 +242,7 @@ const HomePage = () => {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-gray-100"
+              className="overflow-hidden border-t border-gray-100 dark:border-gray-700"
             >
               <div className="p-4 space-y-3">
                 {sortedTasks.length > 0 ? (
@@ -256,7 +258,7 @@ const HomePage = () => {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 mb-2">Nessun impegno per oggi</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">Nessun impegno per oggi</p>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -275,18 +277,18 @@ const HomePage = () => {
       </div>
 
       {/* Contatori Giornalieri - Con intestazione collassabile */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-background-dark-card rounded-xl shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div 
           className="p-4 flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('dailyCounters')}
         >
           <div className="flex items-center">
             <h2 className="text-lg font-semibold">Contatori Giornalieri</h2>
-            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
+            <span className="ml-2 text-sm bg-secondary-50 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300 px-2 py-0.5 rounded-full">
               {counters.filter(c => c.type === 'daily').length}
             </span>
           </div>
-          <Button variant="ghost" size="icon-sm" className="text-gray-500">
+          <Button variant="ghost" size="icon-sm" className="text-gray-500 dark:text-gray-400">
             {expandedSections.dailyCounters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </Button>
         </div>
@@ -298,7 +300,7 @@ const HomePage = () => {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-gray-100"
+              className="overflow-hidden border-t border-gray-100 dark:border-gray-700"
             >
               <div className="p-4 space-y-3">
                 {counters.filter(c => c.type === 'daily').length > 0 ? (
@@ -315,7 +317,7 @@ const HomePage = () => {
                     ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 mb-2">Nessun contatore giornaliero</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">Nessun contatore giornaliero</p>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -334,18 +336,18 @@ const HomePage = () => {
       </div>
 
       {/* Contatori Totali - Con intestazione collassabile */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-background-dark-card rounded-xl shadow-sm dark:shadow-card-dark border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div 
           className="p-4 flex justify-between items-center cursor-pointer" 
           onClick={() => toggleSection('totalCounters')}
         >
           <div className="flex items-center">
             <h2 className="text-lg font-semibold">Contatori Totali</h2>
-            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
+            <span className="ml-2 text-sm bg-secondary-50 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300 px-2 py-0.5 rounded-full">
               {counters.filter(c => c.type === 'total').length}
             </span>
           </div>
-          <Button variant="ghost" size="icon-sm" className="text-gray-500">
+          <Button variant="ghost" size="icon-sm" className="text-gray-500 dark:text-gray-400">
             {expandedSections.totalCounters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </Button>
         </div>
@@ -357,7 +359,7 @@ const HomePage = () => {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-gray-100"
+              className="overflow-hidden border-t border-gray-100 dark:border-gray-700"
             >
               <div className="p-4 space-y-3">
                 {counters.filter(c => c.type === 'total').length > 0 ? (
@@ -374,7 +376,7 @@ const HomePage = () => {
                     ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 mb-2">Nessun contatore totale</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">Nessun contatore totale</p>
                     <Button 
                       variant="outline" 
                       size="sm"
