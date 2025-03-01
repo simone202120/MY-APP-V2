@@ -2,7 +2,7 @@
   "name": "my-routine-app-new",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://simone202120.github.io/my-routine-app-new",
+  "homepage": "https://simone202120.github.io/MY-APP-V2",
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-dialog": "^1.0.5",
