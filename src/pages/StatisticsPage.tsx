@@ -426,36 +426,44 @@ const StatisticsPage = () => {
     <div className="space-y-6 pb-16">
       {/* Selettore periodo */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 sticky top-0 z-10">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
           <h1 className="text-xl font-bold text-gray-800">Statistiche</h1>
-          <div className="flex space-x-2">
+          <div className="grid grid-cols-4 w-full sm:w-auto sm:flex sm:space-x-2 gap-1">
             <Button 
               variant={selectedPeriod === 'day' ? 'default' : 'outline'}
               size="sm"
+              className="px-2 sm:px-3"
               onClick={() => setSelectedPeriod('day')}
             >
-              Giorno
+              <span className="sm:hidden">G</span>
+              <span className="hidden sm:inline">Giorno</span>
             </Button>
             <Button 
               variant={selectedPeriod === 'week' ? 'default' : 'outline'}
               size="sm"
+              className="px-2 sm:px-3"
               onClick={() => setSelectedPeriod('week')}
             >
-              Settimana
+              <span className="sm:hidden">S</span>
+              <span className="hidden sm:inline">Settimana</span>
             </Button>
             <Button 
               variant={selectedPeriod === 'month' ? 'default' : 'outline'}
               size="sm"
+              className="px-2 sm:px-3"
               onClick={() => setSelectedPeriod('month')}
             >
-              Mese
+              <span className="sm:hidden">M</span>
+              <span className="hidden sm:inline">Mese</span>
             </Button>
             <Button 
               variant={selectedPeriod === 'year' ? 'default' : 'outline'}
               size="sm"
+              className="px-2 sm:px-3"
               onClick={() => setSelectedPeriod('year')}
             >
-              Anno
+              <span className="sm:hidden">A</span>
+              <span className="hidden sm:inline">Anno</span>
             </Button>
           </div>
         </div>

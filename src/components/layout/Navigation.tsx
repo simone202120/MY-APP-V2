@@ -132,7 +132,7 @@ const Navigation = () => {
                 <Button
                   key={id}
                   variant="ghost"
-                  className={`flex flex-col items-center justify-center py-1.5 px-4 relative
+                  className={`flex flex-col items-center justify-center py-1.5 px-3 relative
                     ${isActive ? 'text-gray-900' : 'text-gray-500'}
                   `}
                   onClick={() => navigate(id)}
@@ -140,11 +140,11 @@ const Navigation = () => {
                   aria-current={isActive ? 'page' : undefined}
                   hasAnimation={!isActive}
                 >
-                  <div className="relative mb-0.5">
+                  <div className="relative">
                     {isActive && (
                       <div className={`absolute -inset-1 bg-gradient-to-br ${gradient[0]} ${gradient[1]} rounded-full opacity-10 animate-breathe`}></div>
                     )}
-                    <div className="relative h-5 w-5 flex items-center justify-center">
+                    <div className="relative h-6 w-6 flex items-center justify-center">
                       {isActive ? (
                         <div className={`absolute inset-0 bg-gradient-to-br ${gradient[0]} ${gradient[1]} rounded-full`}>
                           <Icon className="w-full h-full p-1.5 text-white" strokeWidth={2} />
@@ -154,7 +154,7 @@ const Navigation = () => {
                       )}
                     </div>
                   </div>
-                  <span className={`text-xs font-medium transition-colors ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
+                  <span className={`text-[10px] font-medium transition-colors ${isActive ? 'text-gray-900' : 'text-gray-500'} sm:text-xs`}>
                     {label}
                   </span>
                 </Button>
