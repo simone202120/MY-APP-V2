@@ -19,7 +19,7 @@ const VAPID_PUBLIC_KEY = 'BIHCRlRl15hmZ6jqHNK7ouCakdGe65ZV7b7c8P8RtbWxNlY25YZJjy
 const VAPID_PRIVATE_KEY = 'ZCOQd0jjJ7L25IBKLZpeNT6oJVke3vPh7w_4rp8Xjns';
 
 webpush.setVapidDetails(
-  'simone94fortunato@gmail.com', // Cambia con la tua email
+  'mailto:simone94fortunato@gmail.com', // Cambia con la tua email
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY
 );
