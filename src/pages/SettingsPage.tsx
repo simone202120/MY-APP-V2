@@ -5,7 +5,8 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Trash2, RefreshCw, LogOut, User, Lock } from 'lucide-react';
+import { Trash2, RefreshCw, LogOut, User, Bell } from 'lucide-react';
+import NotificationSettings from '../components/settings/NotificationSettings';
 
 const SettingsPage = () => {
   const { resetDailyCounters, tasks, counters, resetAllData, isLoading } = useApp();
@@ -15,6 +16,7 @@ const SettingsPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState('');
+  const [showNotificationsSettings, setShowNotificationsSettings] = useState(false);
 
   const handleDeleteAll = async () => {
     if (showConfirmDelete) {
@@ -129,6 +131,25 @@ const SettingsPage = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Gestione Notifiche */}
+      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center">
+            <Bell className="h-5 w-5 mr-2 text-primary-500" />
+            Notifiche
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowNotificationsSettings(!showNotificationsSettings)}
+          >
+            {showNotificationsSettings ? 'Nascondi impostazioni' : 'Mostra impostazioni'}
+          </Button>
+        </div>
+        
+        {showNotificationsSettings && <NotificationSettings />}
       </div>
 
       {/* Statistiche generali */}
