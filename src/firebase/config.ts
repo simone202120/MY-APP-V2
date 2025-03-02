@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getMessaging, isSupported } from "firebase/messaging";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -25,5 +26,25 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-export { db, auth };
+// Initialize Firebase Cloud Messaging (condizionalmente, solo se supportato)
+let messaging: any = null;
+
+// Funzione per inizializzare FCM in modo asincrono
+export const initializeMessaging = async () => {
+  try {
+    const isFCMSupported = await isSupported();
+    if (isFCMSupported) {
+      messaging = getMessaging(app);
+      return messaging;
+    } else {
+      console.log('Firebase Cloud Messaging non è supportato in questo browser');
+      return null;
+    }
+  } catch (error) {
+    console.error('Errore durante l\'inizializzazione di Firebase Cloud Messaging:', error);
+    return null;
+  }
+};
+
+export { db, auth, messaging };
 export default app;

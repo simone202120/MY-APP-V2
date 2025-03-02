@@ -3,15 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { Switch } from '../ui/switch';
 import { Button } from '../ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { Bell, Trash } from 'lucide-react';
+import { Bell, Trash, Smartphone, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import NotificationEntriesService from '../../services/NotificationEntriesService';
 import NotificationService from '../../services/NotificationService'; 
+import FirebaseMessagingService from '../../services/FirebaseMessagingService';
 import { motion } from 'framer-motion';
 
 const NotificationSettings: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, isPushNotificationsEnabled, enablePushNotifications, disablePushNotifications } = useAuth();
   const { createSystemNotification } = useApp();
   const [enableInAppNotifications, setEnableInAppNotifications] = useState(true);
   const [enableBrowserNotifications, setEnableBrowserNotifications] = useState(false);
@@ -19,19 +20,27 @@ const NotificationSettings: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasBrowserPermission, setHasBrowserPermission] = useState(false);
   const [isClearingNotifications, setIsClearingNotifications] = useState(false);
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+  const [pushNotificationsSupported, setPushNotificationsSupported] = useState(false);
   
   const notificationEntriesService = NotificationEntriesService.getInstance();
   const browserNotificationService = NotificationService.getInstance();
+  const fcmService = FirebaseMessagingService.getInstance();
 
-  // Verifica lo stato delle notifiche browser all'avvio
+  // Verifica il supporto per le notifiche push e lo stato delle notifiche browser all'avvio
   useEffect(() => {
-    const checkBrowserPermission = async () => {
+    const checkNotificationsSupport = async () => {
+      // Verifica il supporto per FCM
+      const fcmInitialized = await fcmService.initialize();
+      setPushNotificationsSupported(fcmInitialized);
+      
+      // Verifica le notifiche browser tradizionali
       const hasPermission = await browserNotificationService.areNotificationsEnabled();
       setEnableBrowserNotifications(hasPermission);
       setHasBrowserPermission(hasPermission);
     };
     
-    checkBrowserPermission();
+    checkNotificationsSupport();
   }, []);
 
   // Carica le impostazioni utente da Firestore (da implementare)
@@ -73,6 +82,49 @@ const NotificationSettings: React.FC = () => {
     }
     
     // TODO: salva l'impostazione in Firestore
+  };
+  
+  // Gestisce il cambio di stato per le notifiche push FCM
+  const handlePushNotificationsChange = async (checked: boolean) => {
+    if (!currentUser) return;
+    
+    if (checked) {
+      setIsEnablingPush(true);
+      try {
+        const enabled = await enablePushNotifications();
+        if (enabled) {
+          // Invia una notifica di test per FCM (simulata, la reale implementazione
+          // richiederebbe una Cloud Function)
+          await fcmService.sendPushNotification(
+            currentUser.uid,
+            'Notifiche push abilitate',
+            'Le notifiche push sono state abilitate con successo. Riceverai notifiche anche quando l\'app non è aperta.',
+            'system'
+          );
+          
+          // Invia anche una notifica in-app come conferma
+          await createSystemNotification(
+            'Notifiche push abilitate',
+            'Le notifiche push sono state abilitate con successo'
+          );
+        }
+      } catch (error) {
+        console.error('Errore durante l\'abilitazione delle notifiche push:', error);
+      } finally {
+        setIsEnablingPush(false);
+      }
+    } else {
+      try {
+        await disablePushNotifications();
+        // Invia una notifica in-app come conferma
+        await createSystemNotification(
+          'Notifiche push disabilitate',
+          'Le notifiche push sono state disabilitate'
+        );
+      } catch (error) {
+        console.error('Errore durante la disabilitazione delle notifiche push:', error);
+      }
+    }
   };
 
   // Gestisce il cambio del periodo di conservazione delle notifiche
@@ -143,6 +195,16 @@ const NotificationSettings: React.FC = () => {
         icon: '/logo.svg'
       });
     }
+    
+    // Notifica push FCM
+    if (isPushNotificationsEnabled) {
+      await fcmService.sendPushNotification(
+        currentUser.uid,
+        'Notifica push di test',
+        'Questa è una notifica push di test tramite Firebase Cloud Messaging',
+        'system'
+      );
+    }
   };
 
   return (
@@ -174,7 +236,7 @@ const NotificationSettings: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <h3 className="text-base font-medium">Notifiche browser</h3>
-                <p className="text-sm text-gray-500">Ricevi notifiche anche quando l'app non è aperta</p>
+                <p className="text-sm text-gray-500">Ricevi notifiche quando il browser è aperto</p>
               </div>
               <Switch 
                 checked={enableBrowserNotifications}
@@ -183,17 +245,57 @@ const NotificationSettings: React.FC = () => {
               />
             </div>
             
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-medium">Notifiche push</h3>
+                  {!pushNotificationsSupported && (
+                    <div className="tooltip" data-tip="Le notifiche push non sono supportate in questo browser o dispositivo">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">
+                  Ricevi notifiche anche quando l'app non è aperta
+                  {!pushNotificationsSupported && (
+                    <span className="text-amber-500 block mt-1">
+                      Non supportate in questo browser/dispositivo
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Switch 
+                checked={isPushNotificationsEnabled}
+                onCheckedChange={handlePushNotificationsChange}
+                disabled={!pushNotificationsSupported || isEnablingPush}
+              />
+            </div>
+            
             <div className="pt-2">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={sendTestNotification}
-                disabled={!enableInAppNotifications && !enableBrowserNotifications}
+                disabled={!enableInAppNotifications && !enableBrowserNotifications && !isPushNotificationsEnabled}
               >
                 Invia notifica di test
               </Button>
             </div>
           </div>
+          
+          {isPushNotificationsEnabled && (
+            <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
+              <div className="flex gap-3">
+                <Smartphone className="h-5 w-5 text-primary-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-primary-700">Notifiche push attive</h4>
+                  <p className="text-xs text-primary-600 mt-1">
+                    Riceverai notifiche anche quando l'app non è aperta nel browser. Per disabilitarle, disattiva l'interruttore sopra.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="border-t border-gray-100 pt-5">
             <h3 className="text-base font-medium mb-3">Gestione notifiche</h3>
