@@ -13,6 +13,7 @@ import CreateTaskPage from './pages/CreateTaskPage'; // Aggiungi questa import
 import CreateCounterPage from './pages/CreateCounterPage'; // Aggiungi questa import
 import { LoginForm, SignupForm, ResetPasswordForm } from './components/auth';
 import { LayoutProvider } from './context/LayoutContext';
+import { useServiceWorkerMessages } from './hooks/useServiceWorkerMessages';
 
 
 // Protected route component
@@ -58,6 +59,8 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) => {
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+  // Utilizziamo il nostro hook per gestire le azioni dalle notifiche push
+  useServiceWorkerMessages();
 
   return (
     <AnimatePresence mode="wait">

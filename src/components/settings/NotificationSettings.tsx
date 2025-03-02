@@ -8,14 +8,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import NotificationEntriesService from '../../services/NotificationEntriesService';
 import NotificationService from '../../services/NotificationService'; 
-import FirebaseMessagingService from '../../services/FirebaseMessagingService';
+import NotificationManager from '../../services/NotificationManager';
 import { motion } from 'framer-motion';
 
 const NotificationSettings: React.FC = () => {
-  const { currentUser, isPushNotificationsEnabled, enablePushNotifications, disablePushNotifications } = useAuth();
+  const { currentUser, isPushNotificationsEnabled, enablePushNotifications: authEnablePush, disablePushNotifications } = useAuth();
   const { createSystemNotification } = useApp();
   const [enableInAppNotifications, setEnableInAppNotifications] = useState(true);
   const [enableBrowserNotifications, setEnableBrowserNotifications] = useState(false);
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [deleteAfterDays, setDeleteAfterDays] = useState(30);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasBrowserPermission, setHasBrowserPermission] = useState(false);
@@ -25,14 +26,18 @@ const NotificationSettings: React.FC = () => {
   
   const notificationEntriesService = NotificationEntriesService.getInstance();
   const browserNotificationService = NotificationService.getInstance();
-  const fcmService = FirebaseMessagingService.getInstance();
+  const notificationManager = NotificationManager.getInstance();
 
   // Verifica il supporto per le notifiche push e lo stato delle notifiche browser all'avvio
   useEffect(() => {
     const checkNotificationsSupport = async () => {
-      // Verifica il supporto per FCM
-      const fcmInitialized = await fcmService.initialize();
-      setPushNotificationsSupported(fcmInitialized);
+      // Verifica il supporto per le notifiche push
+      const pushSupported = notificationManager.areNotificationsSupported();
+      setPushNotificationsSupported(pushSupported);
+      
+      // Verifica se le notifiche push sono già attivate
+      const pushEnabled = notificationManager.isNotificationPermissionGranted();
+      setIsPushEnabled(pushEnabled);
       
       // Verifica le notifiche browser tradizionali
       const hasPermission = await browserNotificationService.areNotificationsEnabled();
@@ -84,38 +89,58 @@ const NotificationSettings: React.FC = () => {
     // TODO: salva l'impostazione in Firestore
   };
   
-  // Gestisce il cambio di stato per le notifiche push FCM
+  // Gestisce il cambio di stato per le notifiche push
   const handlePushNotificationsChange = async (checked: boolean) => {
     if (!currentUser) return;
     
     if (checked) {
       setIsEnablingPush(true);
       try {
-        const enabled = await enablePushNotifications();
-        if (enabled) {
-          // Invia una notifica di test per FCM (simulata, la reale implementazione
-          // richiederebbe una Cloud Function)
-          await fcmService.sendPushNotification(
-            currentUser.uid,
-            'Notifiche push abilitate',
-            'Le notifiche push sono state abilitate con successo. Riceverai notifiche anche quando l\'app non è aperta.',
-            'system'
-          );
+        // Richiedi permesso e iscriviti alle notifiche push
+        const permissionGranted = await notificationManager.requestPermission();
+        
+        if (permissionGranted) {
+          const subscribed = await notificationManager.subscribeToPushNotifications(currentUser.uid);
+          setIsPushEnabled(subscribed);
           
-          // Invia anche una notifica in-app come conferma
-          await createSystemNotification(
-            'Notifiche push abilitate',
-            'Le notifiche push sono state abilitate con successo'
-          );
+          if (subscribed) {
+            // Prova anche ad abilitare le notifiche push nel contesto di autenticazione se disponibile
+            if (typeof authEnablePush === 'function') {
+              try {
+                await authEnablePush();
+              } catch (error) {
+                console.error('Errore durante l\'abilitazione delle notifiche push nel contesto auth:', error);
+              }
+            }
+            
+            // Invia una notifica di test
+            await notificationManager.sendPushNotification(
+              currentUser.uid,
+              'Notifiche push abilitate',
+              'Le notifiche push sono state abilitate con successo. Riceverai notifiche anche quando l\'app non è aperta.',
+              'system'
+            );
+            
+            // Invia anche una notifica in-app come conferma
+            await createSystemNotification(
+              'Notifiche push abilitate',
+              'Le notifiche push sono state abilitate con successo'
+            );
+          }
+        } else {
+          setIsPushEnabled(false);
         }
       } catch (error) {
         console.error('Errore durante l\'abilitazione delle notifiche push:', error);
+        setIsPushEnabled(false);
       } finally {
         setIsEnablingPush(false);
       }
     } else {
       try {
-        await disablePushNotifications();
+        await notificationManager.unsubscribeFromPushNotifications(currentUser.uid);
+        setIsPushEnabled(false);
+        
         // Invia una notifica in-app come conferma
         await createSystemNotification(
           'Notifiche push disabilitate',
@@ -196,13 +221,31 @@ const NotificationSettings: React.FC = () => {
       });
     }
     
-    // Notifica push FCM
-    if (isPushNotificationsEnabled) {
-      await fcmService.sendPushNotification(
+    // Notifica push
+    if (isPushEnabled) {
+      await notificationManager.sendPushNotification(
         currentUser.uid,
         'Notifica push di test',
-        'Questa è una notifica push di test tramite Firebase Cloud Messaging',
-        'system'
+        'Questa è una notifica push di test',
+        'system',
+        undefined,
+        [
+          {
+            action: 'feedback-good',
+            title: '😊',
+            icon: '/action-icons/good.png'
+          },
+          {
+            action: 'feedback-neutral',
+            title: '😐',
+            icon: '/action-icons/neutral.png'
+          },
+          {
+            action: 'feedback-bad',
+            title: '😞',
+            icon: '/action-icons/bad.png'
+          }
+        ]
       );
     }
   };
@@ -265,7 +308,7 @@ const NotificationSettings: React.FC = () => {
                 </p>
               </div>
               <Switch 
-                checked={isPushNotificationsEnabled}
+                checked={isPushEnabled}
                 onCheckedChange={handlePushNotificationsChange}
                 disabled={!pushNotificationsSupported || isEnablingPush}
               />
@@ -276,14 +319,14 @@ const NotificationSettings: React.FC = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={sendTestNotification}
-                disabled={!enableInAppNotifications && !enableBrowserNotifications && !isPushNotificationsEnabled}
+                disabled={!enableInAppNotifications && !enableBrowserNotifications && !isPushEnabled}
               >
                 Invia notifica di test
               </Button>
             </div>
           </div>
           
-          {isPushNotificationsEnabled && (
+          {isPushEnabled && (
             <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
               <div className="flex gap-3">
                 <Smartphone className="h-5 w-5 text-primary-500 flex-shrink-0 mt-0.5" />

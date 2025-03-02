@@ -38,6 +38,7 @@ export interface Task {
   recurrenceType?: RecurrenceType;
   recurrenceInterval?: number;
   recurrenceUnit?: TimeUnit; // Proprietà per l'interfaccia locale del form
+  collectFeedback?: boolean; // Se abilitato, mostra emoji per raccogliere feedback nel completamento
 }
 
 // Tipi per i contatori

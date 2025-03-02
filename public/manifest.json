@@ -10,23 +10,42 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#61DAFB",
   "background_color": "#282c34",
-  "gcm_sender_id": "103953800507",
+  "orientation": "portrait",
   "prefer_related_applications": false,
   "related_applications": [],
-  "gcm_user_visible_only": true,
-  "permissions": [
-    "gcm"
+  "categories": ["productivity", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot1.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Aggiungi Task",
+      "url": "/create-task",
+      "icons": [{ "src": "/shortcut-icons/add-task.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Statistiche",
+      "url": "/stats",
+      "icons": [{ "src": "/shortcut-icons/stats.png", "sizes": "96x96" }]
+    }
   ]
 }
