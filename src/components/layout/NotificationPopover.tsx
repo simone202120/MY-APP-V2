@@ -194,7 +194,7 @@ const NotificationPopover: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[90vw] max-w-[320px] sm:w-80 glass-effect rounded-2xl shadow-card py-2 z-50"
+            className="fixed top-[70px] left-1/2 -translate-x-1/2 w-[90vw] max-w-[300px] z-50 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:translate-x-0 sm:mt-2 glass-effect rounded-2xl shadow-card py-2"
           >
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100/50">
               <h2 className="text-sm font-medium text-gray-900">Notifiche</h2>
