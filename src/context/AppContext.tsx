@@ -79,21 +79,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (!counter.endDate || counter.endDate >= today)
     );
     
-    // Verifica l'esistenza di voci per questi contatori per la data odierna
-    const existingEntries = counterEntries.filter(entry => 
-      entry.date === today && 
-      dailyCounters.some(counter => counter.id === entry.counterId)
-    );
-    
-    // Mappa dei contatori per ID per verifiche rapide
-    const existingCounterMap = new Map();
-    existingEntries.forEach(entry => existingCounterMap.set(entry.counterId, true));
-    
     // Salva il valore corrente di ogni contatore come voce storica
     for (const counter of dailyCounters) {
       try {
+        // Verifica se esiste già una voce per questo contatore specifico per oggi
+        const hasEntry = await CounterEntriesService.hasEntriesForDate(today, currentUser.uid, counter.id);
+        
         // Evita di salvare più volte lo stesso contatore per lo stesso giorno
-        if (!existingCounterMap.has(counter.id)) {
+        if (!hasEntry) {
           await addDoc(collection(db, 'counterEntries'), {
             counterId: counter.id,
             userId: currentUser.uid,
@@ -122,15 +115,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
     const today = format(new Date(), 'yyyy-MM-dd');
     
-    // Seleziona solo i contatori giornalieri attivi
+    // Seleziona solo i contatori giornalieri attivi per oggi
     const dailyCounters = counters.filter(
       counter => counter.type === 'daily' &&
       counter.startDate <= today &&
       (!counter.endDate || counter.endDate >= today)
     );
   
-    // Azzera ogni contatore
+    // Prima salva lo stato attuale dei contatori per il giorno precedente (ieri)
+    const yesterday = format(
+      new Date(new Date().setDate(new Date().getDate() - 1)),
+      'yyyy-MM-dd'
+    );
+    
+    // Per ogni contatore, prima di azzerarlo, salva il suo valore come voce storica per ieri
     for (const counter of dailyCounters) {
+      // Verifica se questo contatore era attivo ieri
+      if (counter.startDate <= yesterday && (!counter.endDate || counter.endDate >= yesterday)) {
+        // Verifica se non esiste già un'entry per questo contatore specifico per ieri
+        const hasEntry = await CounterEntriesService.hasEntriesForDate(yesterday, currentUser.uid, counter.id);
+        if (!hasEntry) {
+          try {
+            await addDoc(collection(db, 'counterEntries'), {
+              counterId: counter.id,
+              userId: currentUser.uid,
+              date: yesterday,
+              value: counter.currentValue,
+              name: counter.name,
+              timestamp: Timestamp.now()
+            });
+            console.log(`Salvato contatore ${counter.name} con valore ${counter.currentValue} per ieri (${yesterday})`);
+          } catch (error) {
+            console.error(`Errore nel salvare la voce storica per il contatore ${counter.id}:`, error);
+          }
+        }
+      }
+      
+      // Azzera questo contatore per il nuovo giorno
       const counterRef = doc(db, 'counters', counter.id);
       await updateDoc(counterRef, { currentValue: 0 });
     }
@@ -206,49 +227,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         if (lastReset !== today) {
           // Prima, verifica se abbiamo già salvato i contatori per l'ultimo giorno
-          const yesterday = format(
-            new Date(new Date().setDate(new Date().getDate() - 1)),
-            'yyyy-MM-dd'
-          );
+          // Oggi è un nuovo giorno rispetto all'ultimo reset
+          // I valori attuali dei contatori sono per il giorno precedente (ieri)
+          // quindi prima li salviamo, poi li resettiamo per il nuovo giorno
           
-          console.log(`Verifico se è necessario salvare i contatori per ${yesterday} prima del reset`);
-          
-          // Verifica se tutti i contatori giornalieri hanno già voci per ieri
-          const dailyCounters = counters.filter(
-            counter => counter.type === 'daily' && 
-            counter.startDate <= yesterday &&
-            (!counter.endDate || counter.endDate >= yesterday)
-          );
-          
-          // Ottieni le voci salvate per ieri
-          const yesterdayEntries = await CounterEntriesService.getEntriesByDate(yesterday, currentUser.uid);
-          
-          // Identifica i contatori che non hanno voci per ieri
-          const missingCounterIds = dailyCounters
-            .filter(counter => !yesterdayEntries.some(entry => entry.counterId === counter.id))
-            .map(counter => counter.id);
-          
-          if (missingCounterIds.length > 0) {
-            // Abbiamo contatori che non sono stati salvati per ieri
-            console.log(`Salvataggio contatori mancanti (${missingCounterIds.length}) per ${yesterday} prima del reset`);
-            
-            // Salva i contatori mancanti con la data di ieri
-            for (const counter of dailyCounters) {
-              if (missingCounterIds.includes(counter.id)) {
-                await addDoc(collection(db, 'counterEntries'), {
-                  counterId: counter.id,
-                  userId: currentUser.uid,
-                  date: yesterday, // Usa la data di ieri
-                  value: counter.currentValue, // Salva il valore corrente come valore di ieri
-                  name: counter.name,
-                  timestamp: Timestamp.now()
-                });
-                console.log(`Salvato contatore ${counter.name} con valore ${counter.currentValue} per il giorno ${yesterday}`);
-              }
-            }
-          }
-          
-          // Poi resettare i contatori per il nuovo giorno
+          // Usa direttamente il metodo resetDailyCounters che ora include il salvataggio dello stato precedente
           await resetDailyCounters();
           await updateDoc(lastResetDoc.docs[0].ref, { lastCounterReset: today });
           console.log(`Reset completato: contatori azzerati per il nuovo giorno ${today}`);
@@ -409,14 +392,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addCounter = async (counterData: Omit<Counter, 'id' | 'currentValue'>) => {
     if (!currentUser) return;
   
-    const newCounter = {
-      ...counterData,
-      currentValue: 0,
-      userId: currentUser.uid,
-      createdAt: new Date(),
-    };
-  
-    await addDoc(collection(db, 'counters'), newCounter);
+    // Per contatori giornalieri con durata personalizzata, crea un contatore per ogni giorno
+    if (counterData.type === 'daily' && counterData.duration === 'custom' && counterData.endDate) {
+      const startDate = new Date(counterData.startDate);
+      const endDate = new Date(counterData.endDate);
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      // Calcola il numero di giorni tra le date
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 per includere il giorno finale
+      
+      for (let i = 0; i < dayDiff; i++) {
+        // Calcola la data per questo contatore
+        const counterDate = new Date(startDate);
+        counterDate.setDate(startDate.getDate() + i);
+        const formattedDate = format(counterDate, 'yyyy-MM-dd');
+        
+        const newCounter = {
+          ...counterData,
+          name: `${counterData.name} (${formattedDate})`,
+          startDate: formattedDate, // Ogni contatore ha una data specifica
+          endDate: formattedDate, // Lo stesso giorno come data di fine (solo per questo giorno)
+          currentValue: 0,
+          userId: currentUser.uid,
+          createdAt: new Date(),
+        };
+        
+        await addDoc(collection(db, 'counters'), newCounter);
+      }
+    } else {
+      // Per contatori normali, aggiungi un singolo contatore
+      const newCounter = {
+        ...counterData,
+        currentValue: 0,
+        userId: currentUser.uid,
+        createdAt: new Date(),
+      };
+    
+      await addDoc(collection(db, 'counters'), newCounter);
+    }
   };
 
   const incrementCounter = async (counterId: string) => {

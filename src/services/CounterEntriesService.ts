@@ -132,18 +132,33 @@ export class CounterEntriesService {
   }
   
   /**
-   * Verifica se esistono voci storiche per una data specifica
+   * Verifica se esistono voci storiche per una data e contatore specifici
    * @param date Data da verificare (formato yyyy-MM-dd)
    * @param userId ID dell'utente
+   * @param counterId ID del contatore (opzionale)
    */
-  static async hasEntriesForDate(date: string, userId: string): Promise<boolean> {
+  static async hasEntriesForDate(date: string, userId: string, counterId?: string): Promise<boolean> {
     try {
-      const entriesQuery = query(
-        collection(db, 'counterEntries'),
-        where('userId', '==', userId),
-        where('date', '==', date),
-        limit(1) // Solo per verificare se esistono
-      );
+      let entriesQuery;
+      
+      if (counterId) {
+        // Verifica per un contatore specifico
+        entriesQuery = query(
+          collection(db, 'counterEntries'),
+          where('userId', '==', userId),
+          where('date', '==', date),
+          where('counterId', '==', counterId),
+          limit(1)
+        );
+      } else {
+        // Verifica per qualsiasi contatore in quella data
+        entriesQuery = query(
+          collection(db, 'counterEntries'),
+          where('userId', '==', userId),
+          where('date', '==', date),
+          limit(1)
+        );
+      }
       
       const snapshot = await getDocs(entriesQuery);
       return !snapshot.empty;
