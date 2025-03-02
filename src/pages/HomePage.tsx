@@ -31,9 +31,6 @@ const HomePage = () => {
     totalCounters: true
   });
   
-  // Stato per i quick actions
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  
   // Stato per tenere traccia dell'ultimo task completato per mostrare un feedback
   const [lastCompleted, setLastCompleted] = useState<string | null>(null);
 
@@ -156,64 +153,7 @@ const HomePage = () => {
           </div>
         </div>
         
-        {/* Quick Action FAB - Pulsante per accesso rapido */}
-        <div className="fixed right-4 bottom-24 z-40">
-          <AnimatePresence>
-            {showQuickActions && (
-              <motion.div
-                className="absolute bottom-full right-0 mb-2 space-y-2 rounded-lg bg-white shadow-lg p-2 border border-gray-100"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-              >
-                <Button
-                  size="icon-sm"
-                  className="bg-primary-100 hover:bg-primary-200 text-primary-700 flex items-center justify-center w-12 h-12 rounded-full"
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    navigate('/create-task');
-                  }}
-                >
-                  <div className="flex flex-col items-center">
-                    <Clock className="h-5 w-5" />
-                    <span className="text-[10px] mt-0.5">Impegno</span>
-                  </div>
-                </Button>
-                <Button
-                  size="icon-sm"
-                  className="bg-secondary-100 hover:bg-secondary-200 text-secondary-700 flex items-center justify-center w-12 h-12 rounded-full"
-                  onClick={() => {
-                    setShowQuickActions(false);
-                    navigate('/create-counter');
-                  }}
-                >
-                  <div className="flex flex-col items-center">
-                    <Plus className="h-5 w-5" />
-                    <span className="text-[10px] mt-0.5">Contatore</span>
-                  </div>
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          <Button
-            size="icon-md"
-            rounded="full"
-            className="shadow-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white"
-            onClick={() => setShowQuickActions(!showQuickActions)}
-          >
-            {showQuickActions ? (
-              <motion.div
-                animate={{ rotate: 45 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Plus className="h-6 w-6" />
-              </motion.div>
-            ) : (
-              <PlusCircle className="h-6 w-6" />
-            )}
-          </Button>
-        </div>
+        {/* Il pulsante Quick Action FAB è stato rimosso */}
       </div>
 
       {/* Tasks Section - Con intestazione collassabile */}
