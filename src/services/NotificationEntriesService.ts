@@ -125,9 +125,10 @@ class NotificationEntriesService {
   public async createSystemNotification(
     userId: string,
     title: string,
-    message: string
+    message: string,
+    relatedId?: string
   ): Promise<string> {
-    return this.createNotification(userId, title, message, 'system', '');
+    return this.createNotification(userId, title, message, 'system', relatedId || '');
   }
 
   /**
