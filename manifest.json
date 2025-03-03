@@ -23,7 +23,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#61DAFB",
+  "theme_color": "#0d90e5",
   "background_color": "#282c34",
   "orientation": "portrait",
   "prefer_related_applications": false,
