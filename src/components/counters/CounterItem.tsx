@@ -7,6 +7,7 @@ import DeleteCounterDialog from './DeleteCounterDialog';
 import { format } from 'date-fns';
 import it from 'date-fns/locale/it';
 import { motion } from 'framer-motion';
+import { useApp } from '../../context/AppContext';
 
 interface CounterItemProps {
   counter: Counter;
@@ -21,16 +22,36 @@ const CounterItem: React.FC<CounterItemProps> = ({
   onDecrement,
   onDelete
 }) => {
+  const { counters } = useApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isIncrementAnimation, setIsIncrementAnimation] = useState(false);
   const [isDecrementAnimation, setIsDecrementAnimation] = useState(false);
+
+  // Controlla se esistono altri contatori con lo stesso nome base
+  const getBaseName = (name: string) => name.includes('(') ? name.split('(')[0].trim() : name;
+  const baseName = getBaseName(counter.name);
+  
+  // Verifica se esistono altri contatori con lo stesso nome base
+  const hasMultipleCounters = counters.filter(c => getBaseName(c.name) === baseName).length > 1;
 
   const handleDelete = () => {
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
-    onDelete(counter.id);
+  const confirmDelete = (deleteAll?: boolean) => {
+    if (deleteAll) {
+      // Elimina tutti i contatori con lo stesso nome base
+      const countersToDelete = counters
+        .filter(c => getBaseName(c.name) === baseName)
+        .map(c => c.id);
+      
+      // Elimina ogni contatore trovato
+      countersToDelete.forEach(id => onDelete(id));
+    } else {
+      // Elimina solo questo contatore
+      onDelete(counter.id);
+    }
+    
     setShowDeleteDialog(false);
   };
 
@@ -215,6 +236,7 @@ const CounterItem: React.FC<CounterItemProps> = ({
         onClose={() => setShowDeleteDialog(false)}
         onDelete={confirmDelete}
         counterName={counter.name}
+        counterHasMultiple={hasMultipleCounters}
       />
     </>
   );

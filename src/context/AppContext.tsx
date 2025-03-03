@@ -444,8 +444,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteCounter = async (counterId: string) => {
     if (!currentUser) return;
     
+    // Recupera informazioni sul contatore prima di eliminarlo
+    const counterToDelete = counters.find(c => c.id === counterId);
+    
+    // Elimina il contatore
     const counterRef = doc(db, 'counters', counterId);
     await deleteDoc(counterRef);
+    
+    // Se era l'ultimo contatore con quel nome, mostra una notifica
+    if (counterToDelete) {
+      const baseName = counterToDelete.name.includes('(') ? 
+        counterToDelete.name.split('(')[0].trim() : 
+        counterToDelete.name;
+      
+      const remainingCounters = counters.filter(c => {
+        const cBaseName = c.name.includes('(') ? c.name.split('(')[0].trim() : c.name;
+        return cBaseName === baseName && c.id !== counterId;
+      });
+      
+      if (remainingCounters.length === 0) {
+        // Era l'ultimo, mostra una notifica
+        try {
+          await appNotificationService.createSystemNotification(
+            currentUser.uid,
+            'Contatore eliminato',
+            `Il contatore "${baseName}" è stato eliminato completamente`,
+            ''
+          );
+        } catch (error) {
+          console.error('Errore nella creazione della notifica di eliminazione:', error);
+        }
+      }
+    }
   };
 
   const resetAllData = async () => {
