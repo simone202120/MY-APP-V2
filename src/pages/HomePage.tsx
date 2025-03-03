@@ -243,7 +243,13 @@ const HomePage = () => {
               <div className="p-4 space-y-3">
                 {counters.filter(c => c.type === 'daily').length > 0 ? (
                   counters
-                    .filter(counter => counter.type === 'daily')
+                    .filter(counter => {
+                      // Filtra solo i contatori attivi per oggi
+                      const today = format(new Date(), 'yyyy-MM-dd');
+                      return counter.type === 'daily' && 
+                             counter.startDate <= today && 
+                             (!counter.endDate || counter.endDate >= today);
+                    })
                     .map(counter => (
                       <CounterItem
                         key={counter.id}

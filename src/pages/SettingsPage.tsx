@@ -9,7 +9,7 @@ import { Trash2, RefreshCw, LogOut, User, Bell } from 'lucide-react';
 import NotificationSettings from '../components/settings/NotificationSettings';
 
 const SettingsPage = () => {
-  const { resetDailyCounters, tasks, counters, resetAllData, isLoading } = useApp();
+  const { resetDailyCounters, tasks, counters, resetAllData, resetAllCounters, isLoading } = useApp();
   const { currentUser, logout, updateUserProfile } = useAuth();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
@@ -180,6 +180,25 @@ const SettingsPage = () => {
               </p>
             </div>
             <RefreshCw className="h-5 w-5" />
+          </Button>
+        </motion.div>
+
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          className="bg-white rounded-lg shadow-sm overflow-hidden"
+        >
+          <Button
+            variant="ghost"
+            className="w-full p-4 flex items-center justify-between text-left"
+            onClick={() => resetAllCounters()}
+          >
+            <div>
+              <p className="font-medium text-amber-600">Elimina tutti i contatori</p>
+              <p className="text-sm text-amber-400">
+                Rimuovi solo tutti i contatori
+              </p>
+            </div>
+            <Trash2 className="h-5 w-5 text-amber-600" />
           </Button>
         </motion.div>
 

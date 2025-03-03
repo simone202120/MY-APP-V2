@@ -97,7 +97,7 @@ const CounterItem: React.FC<CounterItemProps> = ({
           {/* Intestazione e pulsante elimina */}
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h3 className="font-medium text-gray-900">{counter.name}</h3>
+              <h3 className="font-medium text-gray-900">{counter.name.includes('(') ? counter.name.split('(')[0].trim() : counter.name}</h3>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                 <div className="flex items-center px-2 py-1 bg-white/60 rounded-full shadow-sm">
                   <Repeat className="h-3.5 w-3.5 mr-1.5 text-primary-500" />

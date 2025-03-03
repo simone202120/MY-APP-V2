@@ -36,6 +36,7 @@ interface AppContextType {
   deleteCounter: (counterId: string) => Promise<void>;
   resetDailyCounters: () => Promise<void>;
   resetAllData: () => Promise<void>;
+  resetAllCounters: () => Promise<void>;
   deleteRoutineOccurrence: (taskId: string, date: string) => Promise<void>;
   getCounterHistory: (counterId: string) => Promise<CounterEntry[]>;
   // Aggiunte per il sistema di notifiche in-app
@@ -392,45 +393,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addCounter = async (counterData: Omit<Counter, 'id' | 'currentValue'>) => {
     if (!currentUser) return;
   
-    // Per contatori giornalieri con durata personalizzata, crea un contatore per ogni giorno
-    if (counterData.type === 'daily' && counterData.duration === 'custom' && counterData.endDate) {
-      const startDate = new Date(counterData.startDate);
-      const endDate = new Date(counterData.endDate);
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
-      // Calcola il numero di giorni tra le date
-      const timeDiff = endDate.getTime() - startDate.getTime();
-      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 per includere il giorno finale
-      
-      for (let i = 0; i < dayDiff; i++) {
-        // Calcola la data per questo contatore
-        const counterDate = new Date(startDate);
-        counterDate.setDate(startDate.getDate() + i);
-        const formattedDate = format(counterDate, 'yyyy-MM-dd');
-        
-        const newCounter = {
-          ...counterData,
-          name: `${counterData.name} (${formattedDate})`,
-          startDate: formattedDate, // Ogni contatore ha una data specifica
-          endDate: formattedDate, // Lo stesso giorno come data di fine (solo per questo giorno)
-          currentValue: 0,
-          userId: currentUser.uid,
-          createdAt: new Date(),
-        };
-        
-        await addDoc(collection(db, 'counters'), newCounter);
-      }
-    } else {
-      // Per contatori normali, aggiungi un singolo contatore
-      const newCounter = {
-        ...counterData,
-        currentValue: 0,
-        userId: currentUser.uid,
-        createdAt: new Date(),
-      };
-    
-      await addDoc(collection(db, 'counters'), newCounter);
-    }
+    // Per tutti i contatori, semplicemente aggiungiamo un singolo contatore che verrà gestito
+    // correttamente con il salvataggio delle statistiche giornaliere e reset a fine giornata
+    const newCounter = {
+      ...counterData,
+      currentValue: 0,
+      userId: currentUser.uid,
+      createdAt: new Date(),
+    };
+  
+    await addDoc(collection(db, 'counters'), newCounter);
   };
 
   const incrementCounter = async (counterId: string) => {
@@ -490,6 +462,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Delete all counters
     for (const counter of counters) {
       await deleteDoc(doc(db, 'counters', counter.id));
+    }
+  };
+  
+  const resetAllCounters = async () => {
+    if (!currentUser) return;
+    
+    // Delete all counters
+    for (const counter of counters) {
+      await deleteDoc(doc(db, 'counters', counter.id));
+    }
+    
+    try {
+      // Crea una notifica per informare l'utente
+      // Passiamo una stringa vuota per il relatedId opzionale
+      await appNotificationService.createSystemNotification(
+        currentUser.uid,
+        'Contatori eliminati',
+        'Tutti i contatori sono stati eliminati con successo'
+      );
+    } catch (error) {
+      console.error('Errore nella creazione della notifica:', error);
     }
   };
   
@@ -568,6 +561,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteCounter,
     resetDailyCounters,
     resetAllData,
+    resetAllCounters,
     deleteRoutineOccurrence,
     getCounterHistory,
     // Nuovi metodi per le notifiche

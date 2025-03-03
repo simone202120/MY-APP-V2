@@ -127,7 +127,7 @@ class NotificationEntriesService {
     title: string,
     message: string
   ): Promise<string> {
-    return this.createNotification(userId, title, message, 'system');
+    return this.createNotification(userId, title, message, 'system', '');
   }
 
   /**
