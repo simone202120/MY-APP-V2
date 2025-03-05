@@ -16,30 +16,31 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from './AuthContext';
-import { Task, Counter, TaskType, CounterType, CounterEntry, Notification } from '../types';
-import { format, isToday, startOfDay } from 'date-fns';
+import { Task, Notification, Counter, CounterEntry } from '../types';
+import { format, isToday, startOfDay, parseISO } from 'date-fns';
 import NotificationService from '../services/NotificationService';
 import NotificationEntriesService from '../services/NotificationEntriesService';
-import { CounterEntriesService } from '../services/CounterEntriesService';
 
 interface AppContextType {
   tasks: Task[];
   counters: Counter[];
-  counterEntries: CounterEntry[];
   isLoading: boolean;
+  // Task operations
   addTask: (task: Omit<Task, 'id' | 'isCompleted' | 'completedDates'>) => Promise<void>;
   toggleTaskComplete: (taskId: string, specificDate?: string) => Promise<void>;
-  addCounter: (counter: Omit<Counter, 'id' | 'currentValue'>) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  deleteRoutineOccurrence: (taskId: string, date: string) => Promise<void>;
+  // Counter operations
+  addCounter: (counter: Omit<Counter, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'currentValue'>) => Promise<void>;
+  updateCounter: (counterId: string, value: number) => Promise<void>;
   incrementCounter: (counterId: string) => Promise<void>;
   decrementCounter: (counterId: string) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>;
   deleteCounter: (counterId: string) => Promise<void>;
   resetDailyCounters: () => Promise<void>;
-  resetAllData: () => Promise<void>;
   resetAllCounters: () => Promise<void>;
-  deleteRoutineOccurrence: (taskId: string, date: string) => Promise<void>;
-  getCounterHistory: (counterId: string) => Promise<CounterEntry[]>;
-  // Aggiunte per il sistema di notifiche in-app
+  // Data operations
+  resetAllData: () => Promise<void>;
+  // Notification operations
   createSystemNotification: (title: string, message: string) => Promise<string | null>;
   createTaskNotification: (title: string, message: string, taskId: string) => Promise<string | null>;
   createCounterNotification: (title: string, message: string, counterId: string) => Promise<string | null>;
@@ -59,7 +60,6 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [counters, setCounters] = useState<Counter[]>([]);
-  const [counterEntries, setCounterEntries] = useState<CounterEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
   
@@ -67,103 +67,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const notificationService = NotificationService.getInstance();
   const appNotificationService = NotificationEntriesService.getInstance();
 
-  // Salva i contatori giornalieri attuali nel database
-  const saveCounterEntries = async () => {
-    if (!currentUser) return;
-    
-    const today = format(new Date(), 'yyyy-MM-dd');
-    
-    // Filtra solo i contatori giornalieri attivi
-    const dailyCounters = counters.filter(
-      counter => counter.type === 'daily' &&
-      counter.startDate <= today &&
-      (!counter.endDate || counter.endDate >= today)
-    );
-    
-    // Salva il valore corrente di ogni contatore come voce storica
-    for (const counter of dailyCounters) {
-      try {
-        // Verifica se esiste già una voce per questo contatore specifico per oggi
-        const hasEntry = await CounterEntriesService.hasEntriesForDate(today, currentUser.uid, counter.id);
-        
-        // Evita di salvare più volte lo stesso contatore per lo stesso giorno
-        if (!hasEntry) {
-          await addDoc(collection(db, 'counterEntries'), {
-            counterId: counter.id,
-            userId: currentUser.uid,
-            date: today,
-            value: counter.currentValue,
-            name: counter.name,
-            timestamp: Timestamp.now()
-          });
-          console.log(`Salvato contatore ${counter.name} con valore ${counter.currentValue} per il giorno ${today}`);
-        } else {
-          console.log(`Contatore ${counter.name} già salvato per la data ${today}`);
-        }
-      } catch (error) {
-        console.error(`Errore nel salvare la voce storica per il contatore ${counter.id}:`, error);
-      }
-    }
-    
-    // Aggiorna lo stato locale con le nuove voci
-    const updatedEntries = await CounterEntriesService.getAllCounterEntries(currentUser.uid);
-    setCounterEntries(updatedEntries);
-  };
-
-  // Reset dei contatori giornalieri a zero
-  const resetDailyCounters = async () => {
-    if (!currentUser) return;
-  
-    const today = format(new Date(), 'yyyy-MM-dd');
-    
-    // Seleziona solo i contatori giornalieri attivi per oggi
-    const dailyCounters = counters.filter(
-      counter => counter.type === 'daily' &&
-      counter.startDate <= today &&
-      (!counter.endDate || counter.endDate >= today)
-    );
-  
-    // Prima salva lo stato attuale dei contatori per il giorno precedente (ieri)
-    const yesterday = format(
-      new Date(new Date().setDate(new Date().getDate() - 1)),
-      'yyyy-MM-dd'
-    );
-    
-    // Per ogni contatore, prima di azzerarlo, salva il suo valore come voce storica per ieri
-    for (const counter of dailyCounters) {
-      // Verifica se questo contatore era attivo ieri
-      if (counter.startDate <= yesterday && (!counter.endDate || counter.endDate >= yesterday)) {
-        // Verifica se non esiste già un'entry per questo contatore specifico per ieri
-        const hasEntry = await CounterEntriesService.hasEntriesForDate(yesterday, currentUser.uid, counter.id);
-        if (!hasEntry) {
-          try {
-            await addDoc(collection(db, 'counterEntries'), {
-              counterId: counter.id,
-              userId: currentUser.uid,
-              date: yesterday,
-              value: counter.currentValue,
-              name: counter.name,
-              timestamp: Timestamp.now()
-            });
-            console.log(`Salvato contatore ${counter.name} con valore ${counter.currentValue} per ieri (${yesterday})`);
-          } catch (error) {
-            console.error(`Errore nel salvare la voce storica per il contatore ${counter.id}:`, error);
-          }
-        }
-      }
-      
-      // Azzera questo contatore per il nuovo giorno
-      const counterRef = doc(db, 'counters', counter.id);
-      await updateDoc(counterRef, { currentValue: 0 });
-    }
-  };
-
   // Fetch user data from Firestore
   useEffect(() => {
     if (!currentUser) {
       setTasks([]);
       setCounters([]);
-      setCounterEntries([]);
       setIsLoading(false);
       return;
     }
@@ -186,7 +94,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Aggiorna il servizio di notifiche con i nuovi task
       notificationService.updateTasks(tasksData);
     });
-
+    
     // Subscribe to counters collection
     const countersQuery = query(
       collection(db, 'counters'),
@@ -198,74 +106,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: doc.id,
         ...doc.data()
       } as Counter));
-      setCounters(countersData);
+      
+      // Verifica se i contatori periodici (daily, weekly, monthly) necessitano di reset
+      const today = new Date();
+      const todayStr = format(today, 'yyyy-MM-dd');
+      
+      // Verifica e aggiorna i contatori che necessitano di reset
+      const updatedCounters = countersData.map(counter => {
+        if (counter.type === 'cumulative') {
+          // I contatori cumulativi non si resettano
+          return counter;
+        }
+        
+        const lastReset = counter.lastResetDate || counter.startDate || todayStr;
+        let needsReset = false;
+        
+        if (counter.type === 'daily') {
+          // Verifica se l'ultima data di reset è diversa da oggi
+          needsReset = lastReset !== todayStr;
+        } 
+        else if (counter.type === 'weekly') {
+          // Ottiene il numero della settimana dell'anno
+          const lastResetDate = parseISO(lastReset);
+          const lastResetWeek = getWeekNumber(lastResetDate);
+          const currentWeek = getWeekNumber(today);
+          
+          // Verifica se siamo in una settimana diversa
+          needsReset = lastResetWeek !== currentWeek;
+        } 
+        else if (counter.type === 'monthly') {
+          // Ottiene il mese corrente
+          const lastResetDate = parseISO(lastReset);
+          const lastResetMonth = lastResetDate.getMonth();
+          const currentMonth = today.getMonth();
+          
+          // Verifica se siamo in un mese diverso
+          needsReset = lastResetMonth !== currentMonth || 
+                      lastResetDate.getFullYear() !== today.getFullYear();
+        }
+        
+        if (needsReset) {
+          // Aggiorna il contatore nel database
+          const counterRef = doc(db, 'counters', counter.id);
+          updateDoc(counterRef, {
+            currentValue: 0,
+            lastResetDate: todayStr,
+            updatedAt: Timestamp.now()
+          });
+          
+          // Ritorna il contatore aggiornato per l'interfaccia
+          return {
+            ...counter,
+            currentValue: 0,
+            lastResetDate: todayStr
+          };
+        }
+        
+        return counter;
+      });
+      
+      setCounters(updatedCounters);
     });
     
-    // Recupera le voci storiche dei contatori
-    const fetchCounterEntries = async () => {
-      try {
-        const entries = await CounterEntriesService.getAllCounterEntries(currentUser.uid);
-        setCounterEntries(entries);
-      } catch (error) {
-        console.error("Errore nel recuperare le voci storiche dei contatori:", error);
-      }
+    // Funzione per calcolare il numero della settimana dell'anno
+    const getWeekNumber = (date: Date) => {
+      const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+      const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+      return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
     };
-    
-    fetchCounterEntries();
-
-    // Check if daily counters need to be reset
-    const checkAndResetCounters = async () => {
-      // Recupera le impostazioni utente per sapere quando è stato fatto l'ultimo reset
-      const lastResetDoc = await getDocs(
-        query(collection(db, 'userSettings'), where('userId', '==', currentUser.uid))
-      );
-      
-      const today = format(startOfDay(new Date()), 'yyyy-MM-dd');
-      
-      if (!lastResetDoc.empty) {
-        const userSettings = lastResetDoc.docs[0].data();
-        const lastReset = userSettings.lastCounterReset;
-        
-        if (lastReset !== today) {
-          // Prima, verifica se abbiamo già salvato i contatori per l'ultimo giorno
-          // Oggi è un nuovo giorno rispetto all'ultimo reset
-          // I valori attuali dei contatori sono per il giorno precedente (ieri)
-          // quindi prima li salviamo, poi li resettiamo per il nuovo giorno
-          
-          // Usa direttamente il metodo resetDailyCounters che ora include il salvataggio dello stato precedente
-          await resetDailyCounters();
-          await updateDoc(lastResetDoc.docs[0].ref, { lastCounterReset: today });
-          console.log(`Reset completato: contatori azzerati per il nuovo giorno ${today}`);
-        }
-      } else {
-        // Create settings document if it doesn't exist
-        await addDoc(collection(db, 'userSettings'), {
-          userId: currentUser.uid,
-          lastCounterReset: today
-        });
-      }
-    };
-    
-    checkAndResetCounters();
-    
-    // Imposta un timer per verificare il reset dei contatori alla mezzanotte
-    const setMidnightCheck = () => {
-      const now = new Date();
-      const midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      
-      const timeToMidnight = midnight.getTime() - now.getTime();
-      
-      console.log(`Prossimo reset programmato tra ${Math.floor(timeToMidnight / 60000)} minuti`);
-      
-      setTimeout(() => {
-        console.log("È mezzanotte: controllo se i contatori devono essere resettati");
-        checkAndResetCounters();
-        setMidnightCheck(); // Reimpostazione per il giorno successivo
-      }, timeToMidnight);
-    };
-    
-    setMidnightCheck();
     
     // Richiedi permesso per le notifiche
     const requestNotificationPermission = async () => {
@@ -390,94 +298,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const addCounter = async (counterData: Omit<Counter, 'id' | 'currentValue'>) => {
-    if (!currentUser) return;
-  
-    // Per tutti i contatori, semplicemente aggiungiamo un singolo contatore che verrà gestito
-    // correttamente con il salvataggio delle statistiche giornaliere e reset a fine giornata
-    const newCounter = {
-      ...counterData,
-      currentValue: 0,
-      userId: currentUser.uid,
-      createdAt: new Date(),
-    };
-  
-    await addDoc(collection(db, 'counters'), newCounter);
-  };
-
-  const incrementCounter = async (counterId: string) => {
-    if (!currentUser) return;
-    
-    const counterToIncrement = counters.find(counter => counter.id === counterId);
-    if (!counterToIncrement) return;
-    
-    const newValue = counterToIncrement.currentValue + 1;
-    const counterRef = doc(db, 'counters', counterId);
-    await updateDoc(counterRef, {
-      currentValue: newValue
-    });
-
-    // Verifica se è stato raggiunto l'obiettivo
-    if (counterToIncrement.goal && newValue >= counterToIncrement.goal) {
-      // Crea una notifica per l'obiettivo raggiunto
-      await appNotificationService.createCounterNotification(
-        currentUser.uid,
-        'Obiettivo raggiunto!',
-        `Hai raggiunto l'obiettivo di ${counterToIncrement.goal} per "${counterToIncrement.name}"`,
-        counterId
-      );
-    }
-  };
-
-  const decrementCounter = async (counterId: string) => {
-    if (!currentUser) return;
-    
-    const counterToDecrement = counters.find(counter => counter.id === counterId);
-    if (!counterToDecrement || counterToDecrement.currentValue <= 0) return;
-    
-    const counterRef = doc(db, 'counters', counterId);
-    await updateDoc(counterRef, {
-      currentValue: counterToDecrement.currentValue - 1
-    });
-  };
-
-  const deleteCounter = async (counterId: string) => {
-    if (!currentUser) return;
-    
-    // Recupera informazioni sul contatore prima di eliminarlo
-    const counterToDelete = counters.find(c => c.id === counterId);
-    
-    // Elimina il contatore
-    const counterRef = doc(db, 'counters', counterId);
-    await deleteDoc(counterRef);
-    
-    // Se era l'ultimo contatore con quel nome, mostra una notifica
-    if (counterToDelete) {
-      const baseName = counterToDelete.name.includes('(') ? 
-        counterToDelete.name.split('(')[0].trim() : 
-        counterToDelete.name;
-      
-      const remainingCounters = counters.filter(c => {
-        const cBaseName = c.name.includes('(') ? c.name.split('(')[0].trim() : c.name;
-        return cBaseName === baseName && c.id !== counterId;
-      });
-      
-      if (remainingCounters.length === 0) {
-        // Era l'ultimo, mostra una notifica
-        try {
-          await appNotificationService.createSystemNotification(
-            currentUser.uid,
-            'Contatore eliminato',
-            `Il contatore "${baseName}" è stato eliminato completamente`,
-            ''
-          );
-        } catch (error) {
-          console.error('Errore nella creazione della notifica di eliminazione:', error);
-        }
-      }
-    }
-  };
-
   const resetAllData = async () => {
     if (!currentUser) return;
     
@@ -488,38 +308,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     for (const task of tasks) {
       await deleteDoc(doc(db, 'tasks', task.id));
     }
-    
-    // Delete all counters
-    for (const counter of counters) {
-      await deleteDoc(doc(db, 'counters', counter.id));
-    }
-  };
-  
-  const resetAllCounters = async () => {
-    if (!currentUser) return;
-    
-    // Delete all counters
-    for (const counter of counters) {
-      await deleteDoc(doc(db, 'counters', counter.id));
-    }
-    
-    try {
-      // Crea una notifica per informare l'utente
-      // Passiamo una stringa vuota per il relatedId opzionale
-      await appNotificationService.createSystemNotification(
-        currentUser.uid,
-        'Contatori eliminati',
-        'Tutti i contatori sono stati eliminati con successo'
-      );
-    } catch (error) {
-      console.error('Errore nella creazione della notifica:', error);
-    }
-  };
-  
-  const getCounterHistory = async (counterId: string): Promise<CounterEntry[]> => {
-    if (!currentUser) return [];
-    
-    return await CounterEntriesService.getCounterEntriesById(counterId, currentUser.uid);
   };
 
   // Implementazione metodi per le notifiche in-app
@@ -567,6 +355,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Counter operations
+  const addCounter = async (counterData: Omit<Counter, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'currentValue' | 'lastResetDate'>) => {
+    if (!currentUser) return;
+    
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    const newCounter = {
+      ...counterData,
+      userId: currentUser.uid,
+      currentValue: 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      lastResetDate: today
+    };
+    
+    await addDoc(collection(db, 'counters'), newCounter);
+  };
+
+  const updateCounter = async (counterId: string, value: number) => {
+    if (!currentUser) return;
+    
+    const counterRef = doc(db, 'counters', counterId);
+    await updateDoc(counterRef, {
+      currentValue: value,
+      updatedAt: Timestamp.now()
+    });
+  };
+
+  const incrementCounter = async (counterId: string) => {
+    if (!currentUser) return;
+    
+    const counter = counters.find(c => c.id === counterId);
+    if (!counter) return;
+    
+    await updateCounter(counterId, counter.currentValue + 1);
+  };
+
+  const decrementCounter = async (counterId: string) => {
+    if (!currentUser) return;
+    
+    const counter = counters.find(c => c.id === counterId);
+    if (!counter || counter.currentValue <= 0) return;
+    
+    await updateCounter(counterId, counter.currentValue - 1);
+  };
+
+  const deleteCounter = async (counterId: string) => {
+    if (!currentUser) return;
+    
+    const counterRef = doc(db, 'counters', counterId);
+    await deleteDoc(counterRef);
+  };
+
+  const resetDailyCounters = async () => {
+    if (!currentUser) return;
+    
+    const dailyCounters = counters.filter(counter => counter.type === 'daily');
+    
+    // Reset each daily counter to 0
+    for (const counter of dailyCounters) {
+      await updateCounter(counter.id, 0);
+    }
+  };
+
+  const resetAllCounters = async () => {
+    if (!currentUser) return;
+    
+    // Reset all counters to 0
+    for (const counter of counters) {
+      await updateCounter(counter.id, 0);
+    }
+  };
+
   const getUnreadNotificationsCount = async (): Promise<number> => {
     if (!currentUser) return 0;
     try {
@@ -580,21 +441,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const value = {
     tasks,
     counters,
-    counterEntries,
     isLoading,
+    // Task operations
     addTask,
     toggleTaskComplete,
+    deleteTask,
+    deleteRoutineOccurrence,
+    // Counter operations
     addCounter,
+    updateCounter,
     incrementCounter,
     decrementCounter,
-    deleteTask,
     deleteCounter,
     resetDailyCounters,
-    resetAllData,
     resetAllCounters,
-    deleteRoutineOccurrence,
-    getCounterHistory,
-    // Nuovi metodi per le notifiche
+    // Data operations
+    resetAllData,
+    // Notification operations
     createSystemNotification,
     createTaskNotification,
     createCounterNotification,

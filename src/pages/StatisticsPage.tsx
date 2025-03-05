@@ -23,19 +23,17 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 // Componenti specifici per le statistiche
 import WeeklyHeatMap from '../components/statistics/WeeklyHeatMap';
 import TrendAnalysis from '../components/statistics/TrendAnalysis';
-import CounterTrends from '../components/statistics/CounterTrends';
 import InsightsPanel from '../components/statistics/InsightsPanel';
 
 // Tipi di periodo per la selezione temporale
 type PeriodType = 'day' | 'week' | 'month' | 'year' | 'all';
 
 const StatisticsPage = () => {
-  const { tasks, counters, counterEntries } = useApp();
+  const { tasks } = useApp();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     overview: true,
     timeline: false,
     behavior: false,
-    counters: false,
     insights: false,
     periodDropdown: false
   });
@@ -120,13 +118,6 @@ const StatisticsPage = () => {
     });
   }, [tasks, periodDates]);
 
-  // Filtra le voci dei contatori in base al periodo selezionato
-  const filteredCounterEntries = useMemo(() => {
-    return counterEntries.filter(entry => {
-      const entryDate = parseISO(entry.date);
-      return isWithinInterval(entryDate, periodDates);
-    });
-  }, [counterEntries, periodDates]);
 
   // Calcolo delle statistiche principali
   const taskStats = useMemo(() => {
@@ -727,32 +718,6 @@ const StatisticsPage = () => {
         )}
       </div>
 
-      {/* Sezione 4: Statistiche Contatori */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div 
-          className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
-          onClick={() => toggleSection('counters')}
-        >
-          <div className="flex items-center">
-            <Activity className="h-5 w-5 mr-2 text-primary-500" />
-            <h2 className="text-lg font-semibold">Statistiche Contatori</h2>
-          </div>
-          <Button variant="ghost" size="sm" className="p-1">
-            {expandedSections.counters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
-        </div>
-
-        {expandedSections.counters && (
-          <div className="p-4 border-t">
-            <CounterTrends 
-              counters={counters} 
-              counterEntries={filteredCounterEntries} 
-              allCounterEntries={counterEntries}
-              period={selectedPeriod}
-            />
-          </div>
-        )}
-      </div>
 
       {/* Sezione 5: Insights e Suggerimenti */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -772,9 +737,9 @@ const StatisticsPage = () => {
         {expandedSections.insights && (
           <div className="p-4 border-t">
             <InsightsPanel 
-              tasks={tasks} 
-              counters={counters}
-              counterEntries={counterEntries}
+              tasks={tasks}
+              counters={[]}
+              counterEntries={[]}
             />
           </div>
         )}

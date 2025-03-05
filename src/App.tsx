@@ -9,8 +9,8 @@ import HomePage from './pages/HomePage';
 import CalendarPage from './pages/CalendarPage';
 import StatisticsPage from './pages/StatisticsPage';
 import SettingsPage from './pages/SettingsPage';
-import CreateTaskPage from './pages/CreateTaskPage'; // Aggiungi questa import
-import CreateCounterPage from './pages/CreateCounterPage'; // Aggiungi questa import
+import CreateTaskPage from './pages/CreateTaskPage'; 
+import CreateCounterPage from './pages/CreateCounterPage';
 import { LoginForm, SignupForm, ResetPasswordForm } from './components/auth';
 import { LayoutProvider } from './context/LayoutContext';
 import { useServiceWorkerMessages } from './hooks/useServiceWorkerMessages';
@@ -97,7 +97,7 @@ const AnimatedRoutes = () => {
             </ProtectedRoute>
           } 
         />
-        {/* Aggiungi le nuove rotte */}
+        {/* Rotte per creazione e modifica */}
         <Route 
           path="/create-task" 
           element={

@@ -1,7 +1,7 @@
 // components/layout/Navigation.tsx
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Calendar, BarChart2, Settings, Plus, LucideIcon, X } from 'lucide-react';
+import { Home, Calendar, BarChart2, Settings, Plus, LucideIcon, X, Target } from 'lucide-react';
 import { Button } from "../ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -70,7 +70,7 @@ const Navigation = () => {
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <Button
                   variant="glass"
                   className="flex flex-col items-center justify-center gap-3 h-auto py-6 relative overflow-hidden group border-2 border-primary-200/50"
@@ -98,7 +98,7 @@ const Navigation = () => {
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary-100 to-secondary-200 opacity-30 group-hover:opacity-50 transition-opacity"></div>
                   <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-secondary-400 to-secondary-600 flex items-center justify-center shadow-lg mb-1">
-                    <Plus className="h-6 w-6 text-white" />
+                    <Target className="h-6 w-6 text-white" />
                   </div>
                   <span className="text-gray-800 font-medium relative">Nuovo contatore</span>
                 </Button>

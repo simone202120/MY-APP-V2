@@ -1,12 +1,12 @@
 // pages/HomePage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Sparkles, ChevronDown, ChevronUp, Clock, CheckCircle, PlusCircle } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import TaskItem from '../components/tasks/TaskItem';
 import CounterItem from '../components/counters/CounterItem';
 import { useApp } from '../context/AppContext';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, parseISO, isWithinInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { isTaskScheduledForDate, isTaskCompletedForDate } from '../utils/TaskUtils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,11 +24,10 @@ const HomePage = () => {
     deleteCounter
   } = useApp();
   
-  // Stato per le sezioni collassabili e la visualizzazione rapida
+  // Stato per le sezioni collassabili
   const [expandedSections, setExpandedSections] = useState({
     tasks: true,
-    dailyCounters: true,
-    totalCounters: true
+    counters: true
   });
   
   // Stato per tenere traccia dell'ultimo task completato per mostrare un feedback
@@ -36,6 +35,54 @@ const HomePage = () => {
 
   const today = format(new Date(), 'yyyy-MM-dd');
   const currentDate = new Date();
+  
+  // Filtra i contatori attivi per oggi
+  const todayCounters = counters.filter(counter => {
+    // Per i contatori cumulativi, controlla solo che siano attivi
+    if (counter.type === 'cumulative') {
+      // Se non ha startDate è sempre attivo
+      if (!counter.startDate) return true;
+      
+      try {
+        const startDate = parseISO(counter.startDate);
+        const endDate = counter.endDate ? parseISO(counter.endDate) : null;
+        
+        // Verifica se la data corrente è dopo la data di inizio
+        const isAfterStart = currentDate >= startDate;
+        
+        // Se c'è una data di fine, verifica che la data corrente sia prima
+        const isBeforeEnd = endDate ? currentDate <= endDate : true;
+        
+        return isAfterStart && isBeforeEnd;
+      } catch (error) {
+        console.error("Errore nella validazione delle date del contatore:", error);
+        return false;
+      }
+    }
+    
+    // Per i contatori periodici (daily, weekly, monthly)
+    if (counter.type === 'daily' || counter.type === 'weekly' || counter.type === 'monthly') {
+      // Se non ha startDate è sempre attivo
+      if (!counter.startDate) return true;
+      
+      try {
+        const startDate = parseISO(counter.startDate);
+        const endDate = counter.endDate ? parseISO(counter.endDate) : null;
+        
+        // Verifica se la data corrente è nell'intervallo
+        if (endDate) {
+          return isWithinInterval(currentDate, { start: startDate, end: endDate });
+        } else {
+          return currentDate >= startDate;
+        }
+      } catch (error) {
+        console.error("Errore nella validazione delle date del contatore:", error);
+        return false;
+      }
+    }
+    
+    return false;
+  });
 
   // Modificata la logica di filtraggio per utilizzare l'utility
   const todayTasks = tasks.filter(task => {
@@ -156,6 +203,76 @@ const HomePage = () => {
         {/* Il pulsante Quick Action FAB è stato rimosso */}
       </div>
 
+      {/* Contatori Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+        <div 
+          className="p-4 flex justify-between items-center cursor-pointer" 
+          onClick={() => toggleSection('counters')}
+        >
+          <div className="flex items-center">
+            <h2 className="text-lg font-semibold">I tuoi contatori attivi</h2>
+            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
+              {todayCounters.length}
+            </span>
+          </div>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              className="text-gray-500 mr-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/create-counter');
+              }}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon-sm" className="text-gray-500">
+              {expandedSections.counters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+        
+        <AnimatePresence>
+          {expandedSections.counters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-gray-100"
+            >
+              <div className="p-4 space-y-3">
+                {todayCounters.length > 0 ? (
+                  todayCounters.map(counter => (
+                    <CounterItem
+                      key={counter.id}
+                      counter={counter}
+                      onIncrement={incrementCounter}
+                      onDecrement={decrementCounter}
+                      onDelete={deleteCounter}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-2">Nessun contatore attivo</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => navigate('/create-counter')}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Aggiungi contatore
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {/* Tasks Section - Con intestazione collassabile */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div 
@@ -168,9 +285,22 @@ const HomePage = () => {
               {completedTodayTasks.length}/{todayTasks.length}
             </span>
           </div>
-          <Button variant="ghost" size="icon-sm" className="text-gray-500">
-            {expandedSections.tasks ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon-sm" 
+              className="text-gray-500 mr-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/create-task');
+              }}
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon-sm" className="text-gray-500">
+              {expandedSections.tasks ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
         
         <AnimatePresence>
@@ -214,129 +344,6 @@ const HomePage = () => {
         </AnimatePresence>
       </div>
 
-      {/* Contatori Giornalieri - Con intestazione collassabile */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div 
-          className="p-4 flex justify-between items-center cursor-pointer" 
-          onClick={() => toggleSection('dailyCounters')}
-        >
-          <div className="flex items-center">
-            <h2 className="text-lg font-semibold">Contatori Giornalieri</h2>
-            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
-              {counters.filter(c => c.type === 'daily').length}
-            </span>
-          </div>
-          <Button variant="ghost" size="icon-sm" className="text-gray-500">
-            {expandedSections.dailyCounters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
-        </div>
-        
-        <AnimatePresence>
-          {expandedSections.dailyCounters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-gray-100"
-            >
-              <div className="p-4 space-y-3">
-                {counters.filter(c => c.type === 'daily').length > 0 ? (
-                  counters
-                    .filter(counter => {
-                      // Filtra solo i contatori attivi per oggi
-                      const today = format(new Date(), 'yyyy-MM-dd');
-                      return counter.type === 'daily' && 
-                             counter.startDate <= today && 
-                             (!counter.endDate || counter.endDate >= today);
-                    })
-                    .map(counter => (
-                      <CounterItem
-                        key={counter.id}
-                        counter={counter}
-                        onIncrement={incrementCounter}
-                        onDecrement={decrementCounter}
-                        onDelete={deleteCounter}
-                      />
-                    ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-2">Nessun contatore giornaliero</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => navigate('/create-counter')}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Aggiungi contatore
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Contatori Totali - Con intestazione collassabile */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div 
-          className="p-4 flex justify-between items-center cursor-pointer" 
-          onClick={() => toggleSection('totalCounters')}
-        >
-          <div className="flex items-center">
-            <h2 className="text-lg font-semibold">Contatori Totali</h2>
-            <span className="ml-2 text-sm bg-secondary-50 text-secondary-700 px-2 py-0.5 rounded-full">
-              {counters.filter(c => c.type === 'total').length}
-            </span>
-          </div>
-          <Button variant="ghost" size="icon-sm" className="text-gray-500">
-            {expandedSections.totalCounters ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </Button>
-        </div>
-        
-        <AnimatePresence>
-          {expandedSections.totalCounters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-gray-100"
-            >
-              <div className="p-4 space-y-3">
-                {counters.filter(c => c.type === 'total').length > 0 ? (
-                  counters
-                    .filter(counter => counter.type === 'total')
-                    .map(counter => (
-                      <CounterItem
-                        key={counter.id}
-                        counter={counter}
-                        onIncrement={incrementCounter}
-                        onDecrement={decrementCounter}
-                        onDelete={deleteCounter}
-                      />
-                    ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-2">Nessun contatore totale</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => navigate('/create-counter')}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Aggiungi contatore
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </div>
   );
 };

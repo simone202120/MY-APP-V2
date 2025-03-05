@@ -64,7 +64,7 @@ const CalendarPage = () => {
   });
 
   // Filtra i contatori giornalieri attivi per la data selezionata
-  const selectedDateCounters = counters.filter(counter => {
+  const selectedDateCounters = counters.filter((counter: any) => {
     // Solo contatori giornalieri
     if (counter.type !== 'daily') return false;
     
@@ -85,7 +85,7 @@ const CalendarPage = () => {
       console.error("Errore nel parsing delle date:", error);
       return false;
     }
-  }).map(counter => {
+  }).map((counter: any) => {
     // Per i giorni futuri o passati, modifica il valore del contatore a 0
     if (!isSelectedDateToday) {
       return { ...counter, displayValue: 0 };
@@ -110,7 +110,7 @@ const CalendarPage = () => {
 
   const hasCountersOnDate = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return counters.some(counter => {
+    return counters.some((counter: any) => {
       if (counter.type !== 'daily') return false;
       
       // Aggiunto controllo per startDate undefined
@@ -254,16 +254,17 @@ const CalendarPage = () => {
           <div>
             <h3 className="text-md font-medium text-gray-700 mb-3">Contatori Giornalieri</h3>
             <div className="space-y-3">
-              {selectedDateCounters.map(counter => (
+              {selectedDateCounters.map((counter: any) => (
                 <CounterItem
                   key={counter.id}
                   counter={{
                     ...counter,
-                    currentValue: counter.displayValue
+                    currentValue: counter.displayValue !== undefined ? counter.displayValue : counter.currentValue
                   }}
-                  onIncrement={incrementCounter}
-                  onDecrement={decrementCounter}
-                  onDelete={deleteCounter}
+                  onIncrement={isSelectedDateToday ? incrementCounter : () => {}}
+                  onDecrement={isSelectedDateToday ? decrementCounter : () => {}}
+                  onDelete={isSelectedDateToday ? deleteCounter : () => {}}
+                  isReadOnly={!isSelectedDateToday}
                 />
               ))}
               {!isSelectedDateToday && (

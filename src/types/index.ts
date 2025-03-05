@@ -14,7 +14,7 @@ export type TimeUnit = 'days' | 'weeks' | 'months';
 export type NotificationTimeUnit = 'minutes' | 'hours';
 
 // Tipi di notifiche in-app
-export type NotificationType = 'task' | 'counter' | 'system';
+export type NotificationType = 'task' | 'system' | 'counter';
 
 // Estendi l'interfaccia Task se necessario
 export interface Task {
@@ -41,29 +41,33 @@ export interface Task {
   collectFeedback?: boolean; // Se abilitato, mostra emoji per raccogliere feedback nel completamento
 }
 
-// Tipi per i contatori
-export type CounterType = 'daily' | 'total';
-
+// Interfaccia per i contatori
 export interface Counter {
   id: string;
+  userId: string;
   name: string;
-  type: CounterType;
-  currentValue: number;
-  startDate: string;
-  endDate?: string;
-  duration: 'day' | 'custom';
-  goal?: number; // Obiettivo numerico opzionale per il contatore
+  description?: string;
+  type: 'daily' | 'weekly' | 'monthly' | 'cumulative'; // Tipo di contatore
+  startDate?: string; // Data di inizio (formato yyyy-MM-dd)
+  endDate?: string; // Data di fine (formato yyyy-MM-dd)
+  currentValue: number; // Valore corrente
+  displayValue?: number; // Valore da mostrare (per uso UI)
+  goal?: number; // Obiettivo da raggiungere
+  createdAt: any; // Timestamp di Firestore
+  updatedAt: any; // Timestamp di Firestore
+  lastResetDate?: string; // Ultima data di reset (formato yyyy-MM-dd)
 }
 
-// Voci storiche per i contatori
+// Interfaccia per le voci dei contatori
 export interface CounterEntry {
   id: string;
   counterId: string;
   userId: string;
-  date: string;
-  value: number;
-  name?: string;
-  timestamp?: any; // Timestamp di Firestore
+  name?: string; // Nome del contatore al momento dell'inserimento
+  value: number; // Valore registrato
+  date: string; // Data dell'inserimento (formato yyyy-MM-dd)
+  timestamp: any; // Timestamp di Firestore
+  note?: string; // Nota opzionale
 }
 
 // Interfaccia per le notifiche in-app

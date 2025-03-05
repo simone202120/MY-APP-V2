@@ -149,7 +149,7 @@ class NotificationEntriesService {
   }
 
   /**
-   * Crea una notifica relativa a un contatore
+   * Crea una notifica relativa a un counter
    * @param {string} userId - ID dell'utente
    * @param {string} title - Titolo della notifica
    * @param {string} message - Messaggio della notifica
@@ -164,6 +164,7 @@ class NotificationEntriesService {
   ): Promise<string> {
     return this.createNotification(userId, title, message, 'counter', counterId);
   }
+
 
   /**
    * Ottiene tutte le notifiche di un utente
