@@ -1,10 +1,11 @@
 // components/layout/Header.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, LogOut, Moon } from 'lucide-react';
+import { User, Settings, LogOut, Moon, Sparkles } from 'lucide-react';
 import { Button } from "../ui/button";
 import { useAuth } from '../../context/AuthContext';
 import NotificationPopover from './NotificationPopover';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = () => {
   const { currentUser, logout } = useAuth();
@@ -42,19 +43,25 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-effect backdrop-blur-md">
+    <motion.header 
+      initial={{ y: -10, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="fixed top-0 left-0 right-0 z-50 glass-effect shadow-sm"
+    >
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="flex items-center justify-between h-16">
           <button 
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 focus:outline-none"
+            className="flex items-center gap-2 focus:outline-none group"
           >
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 bg-primary-400 rounded-lg animate-float opacity-50 blur-sm"></div>
-              <Moon className="h-5 w-5 text-primary-600 relative z-10" />
+            <div className="relative w-9 h-9 flex items-center justify-center overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-accent opacity-80 rounded-xl"></div>
+              <div className="absolute inset-0 bg-gradient-accent opacity-50 blur-sm rounded-xl group-hover:scale-110 transition-transform duration-500"></div>
+              <Sparkles className="h-5 w-5 text-white relative z-10" />
             </div>
-            <h1 className="text-xl font-display font-semibold text-gray-900 select-none">
-              <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">My</span>
+            <h1 className="text-xl font-display font-semibold text-gray-900 select-none ml-1">
+              <span className="gradient-text font-bold">My</span>
               <span>Routine</span>
             </h1>
           </button>
@@ -74,6 +81,7 @@ const Header = () => {
                   aria-controls="user-menu"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   hasAnimation={true}
+                  className="shadow-sm hover:shadow-md"
                 >
                   {currentUser.photoURL ? (
                     <img 
@@ -82,56 +90,66 @@ const Header = () => {
                       className="h-8 w-8 rounded-full object-cover border-2 border-white"
                     />
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary-100 to-secondary-100 flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary-600" />
+                    <div className="h-8 w-8 rounded-full bg-gradient-accent flex items-center justify-center">
+                      <User className="h-5 w-5 text-white" />
                     </div>
                   )}
                 </Button>
                 
-                {showUserMenu && (
-                  <div 
-                    id="user-menu"
-                    ref={menuRef}
-                    className="absolute right-0 mt-2 w-60 glass-effect rounded-2xl shadow-card py-2 z-10 animate-in fade-in-50 duration-200"
-                  >
-                    <div className="px-4 py-3 border-b border-gray-100/50">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {currentUser.displayName || 'Utente'}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {currentUser.email}
-                      </p>
-                    </div>
-                    <div className="py-1">
-                      <button
-                        className="flex items-center w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-white/50 transition-colors rounded-lg mx-1"
-                        onClick={() => {
-                          navigate('/settings');
-                          setShowUserMenu(false);
-                        }}
-                      >
-                        <Settings className="h-4 w-4 mr-2 text-primary-500" />
-                        Impostazioni
-                      </button>
-                      <button
-                        className="flex items-center w-full text-left px-4 py-2.5 text-sm text-tertiary-600 hover:bg-tertiary-50/50 transition-colors rounded-lg mx-1"
-                        onClick={() => {
-                          handleLogout();
-                          setShowUserMenu(false);
-                        }}
-                      >
-                        <LogOut className="h-4 w-4 mr-2 text-tertiary-500" />
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div 
+                      id="user-menu"
+                      ref={menuRef}
+                      className="absolute right-0 mt-2 w-64 card card-glass rounded-xl shadow-card-hover py-2 z-10"
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="px-4 py-3 border-b border-gray-100/50">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {currentUser.displayName || 'Utente'}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {currentUser.email}
+                        </p>
+                      </div>
+                      <div className="py-2 px-1">
+                        <button
+                          className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-primary-50/70 transition-colors rounded-lg mx-1"
+                          onClick={() => {
+                            navigate('/settings');
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                            <Settings className="h-4 w-4 text-primary-600" />
+                          </div>
+                          Impostazioni
+                        </button>
+                        <button
+                          className="flex items-center w-full text-left px-4 py-3 text-sm text-tertiary-600 hover:bg-tertiary-50/70 transition-colors rounded-lg mx-1"
+                          onClick={() => {
+                            handleLogout();
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-tertiary-50 flex items-center justify-center mr-3">
+                            <LogOut className="h-4 w-4 text-tertiary-600" />
+                          </div>
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };
 
