@@ -6,13 +6,13 @@ import { useAuth } from '../context/AuthContext';
 import { useLayoutContext } from '../context/LayoutContext';
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Trash2, RefreshCw, LogOut, User, Bell, Moon, Sun } from 'lucide-react';
+import { Trash2, RefreshCw, LogOut, User, Bell } from 'lucide-react';
 import NotificationSettings from '../components/settings/NotificationSettings';
 
 const SettingsPage = () => {
   const { resetDailyCounters, tasks, counters, resetAllData, resetAllCounters, isLoading } = useApp();
   const { currentUser, logout, updateUserProfile } = useAuth();
-  const { darkMode, toggleDarkMode } = useLayoutContext();
+  const { showFooter } = useLayoutContext();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -154,37 +154,6 @@ const SettingsPage = () => {
         {showNotificationsSettings && <NotificationSettings />}
       </div>
 
-      {/* Tema */}
-      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-3 flex items-center">
-          {darkMode ? <Moon className="h-5 w-5 mr-2 text-primary-500" /> : <Sun className="h-5 w-5 mr-2 text-primary-500" />}
-          Tema
-        </h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium">{darkMode ? 'Tema scuro' : 'Tema chiaro'}</p>
-            <p className="text-sm text-gray-500">Cambia l'aspetto dell'app</p>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={toggleDarkMode}
-            className="flex items-center gap-2"
-          >
-            {darkMode ? (
-              <>
-                <Sun className="h-4 w-4" />
-                <span>Tema chiaro</span>
-              </>
-            ) : (
-              <>
-                <Moon className="h-4 w-4" />
-                <span>Tema scuro</span>
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
 
       {/* Statistiche generali */}
       <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">

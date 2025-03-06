@@ -134,7 +134,7 @@ const Navigation = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="w-12 h-12 rounded-full flex items-center justify-center shadow-colored-hover bg-gradient-accent border-2 border-white dark:border-gray-800"
+              className="w-12 h-12 rounded-full flex items-center justify-center shadow-colored-hover bg-gradient-accent border-2 border-white"
               aria-label="Crea nuovo"
               onClick={() => setShowCreateMenu(!showCreateMenu)}
             >
