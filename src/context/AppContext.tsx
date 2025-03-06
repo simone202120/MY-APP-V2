@@ -20,6 +20,7 @@ import { Task, Notification, Counter, CounterEntry } from '../types';
 import { format, isToday, startOfDay, parseISO } from 'date-fns';
 import NotificationService from '../services/NotificationService';
 import NotificationEntriesService from '../services/NotificationEntriesService';
+import CounterEntriesService from '../services/CounterEntriesService';
 
 interface AppContextType {
   tasks: Task[];
@@ -63,9 +64,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
   
-  // Inizializza i servizi di notifiche
+  // Inizializza i servizi
   const notificationService = NotificationService.getInstance();
   const appNotificationService = NotificationEntriesService.getInstance();
+  const counterEntriesService = CounterEntriesService.getInstance();
 
   // Fetch user data from Firestore
   useEffect(() => {
@@ -102,10 +104,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     const unsubscribeCounters = onSnapshot(countersQuery, (snapshot) => {
-      const countersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Counter));
+      // Log per debug
+      console.log('Contatori recuperati:', snapshot.docs.length);
+      
+      const countersData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Counter data:', { id: doc.id, ...data });
+        return {
+          id: doc.id,
+          ...data
+        } as Counter;
+      });
       
       // Verifica se i contatori periodici (daily, weekly, monthly) necessitano di reset
       const today = new Date();
@@ -113,8 +122,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       // Verifica e aggiorna i contatori che necessitano di reset
       const updatedCounters = countersData.map(counter => {
-        if (counter.type === 'cumulative') {
-          // I contatori cumulativi non si resettano
+        if (!counter.type || counter.type === 'cumulative') {
+          // I contatori cumulativi o senza tipo non si resettano
           return counter;
         }
         
@@ -146,6 +155,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         
         if (needsReset) {
+          // Solo se il valore non è 0, salvalo prima di resettare
+          if (counter.currentValue > 0) {
+            // Salva il valore del contatore prima del reset
+            counterEntriesService.saveCounterEntry(
+              counter,
+              `Reset automatico - ${counter.type}`
+            ).catch(error => {
+              console.error('Errore durante il salvataggio del valore del contatore:', error);
+            });
+          }
+          
           // Aggiorna il contatore nel database
           const counterRef = doc(db, 'counters', counter.id);
           updateDoc(counterRef, {
@@ -359,18 +379,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addCounter = async (counterData: Omit<Counter, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'currentValue' | 'lastResetDate'>) => {
     if (!currentUser) return;
     
-    const today = format(new Date(), 'yyyy-MM-dd');
-    
-    const newCounter = {
-      ...counterData,
-      userId: currentUser.uid,
-      currentValue: 0,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-      lastResetDate: today
-    };
-    
-    await addDoc(collection(db, 'counters'), newCounter);
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      // Verifica che i campi obbligatori siano presenti
+      if (!counterData.name || !counterData.type) {
+        throw new Error('Nome e tipo sono campi obbligatori');
+      }
+      
+      // Rimuovi campi undefined prima di salvare in Firestore
+      const cleanedData: Record<string, any> = {};
+      Object.entries(counterData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          cleanedData[key] = value;
+        }
+      });
+      
+      const newCounter = {
+        ...cleanedData,
+        userId: currentUser.uid,
+        currentValue: 0,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        lastResetDate: today
+      };
+      
+      console.log('Creazione contatore:', newCounter);
+      await addDoc(collection(db, 'counters'), newCounter);
+    } catch (error) {
+      console.error('Errore durante la creazione del contatore:', error);
+      throw error; // Rilancia l'errore per gestirlo nel componente
+    }
   };
 
   const updateCounter = async (counterId: string, value: number) => {
@@ -413,8 +452,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const dailyCounters = counters.filter(counter => counter.type === 'daily');
     
-    // Reset each daily counter to 0
+    // Reset each daily counter to 0, ma salva prima i valori
     for (const counter of dailyCounters) {
+      if (counter.currentValue > 0) {
+        // Salva il valore prima del reset
+        try {
+          // Usa await qui perché siamo in una funzione async
+          await counterEntriesService.saveCounterEntry(
+            counter,
+            "Reset manuale giornalieri"
+          );
+        } catch (error) {
+          console.error('Errore durante il salvataggio del valore del contatore:', error);
+        }
+      }
       await updateCounter(counter.id, 0);
     }
   };
@@ -422,8 +473,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetAllCounters = async () => {
     if (!currentUser) return;
     
-    // Reset all counters to 0
+    // Reset all counters to 0, ma salva prima i valori
     for (const counter of counters) {
+      if (counter.currentValue > 0) {
+        try {
+          // Usa await qui perché siamo in una funzione async
+          await counterEntriesService.saveCounterEntry(
+            counter,
+            "Reset manuale globale"
+          );
+        } catch (error) {
+          console.error('Errore durante il salvataggio del valore del contatore:', error);
+        }
+      }
       await updateCounter(counter.id, 0);
     }
   };

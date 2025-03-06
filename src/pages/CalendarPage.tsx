@@ -63,29 +63,54 @@ const CalendarPage = () => {
     return false;
   });
 
-  // Filtra i contatori giornalieri attivi per la data selezionata
-  const selectedDateCounters = counters.filter((counter: any) => {
-    // Solo contatori giornalieri
-    if (counter.type !== 'daily') return false;
-    
-    // Controlla se la data selezionata è nel range di validità del contatore
+  // Funzione per controllare se un contatore è attivo per la data selezionata
+  const isCounterActiveForDate = (counter: any, date: Date) => {
+    // Controlla la data di inizio
     if (!counter.startDate) return false;
     
     try {
       const startDate = parseISO(counter.startDate);
       
+      // Controlla range di validità
       if (counter.endDate) {
         const endDate = parseISO(counter.endDate);
-        return isWithinInterval(selectedDate, { start: startDate, end: endDate });
+        if (!isWithinInterval(date, { start: startDate, end: endDate })) {
+          return false;
+        }
       } else {
-        // Se non c'è una data di fine, controlla solo se è dopo la data di inizio
-        return selectedDate >= startDate;
+        // Se non c'è data di fine, controlla solo se è dopo la data di inizio
+        if (date < startDate) return false;
       }
+      
+      // Per i contatori giornalieri, sempre valido entro il range
+      if (counter.type === 'daily') return true;
+      
+      // Per i contatori settimanali, controlla se è lo stesso giorno della settimana
+      if (counter.type === 'weekly') {
+        const startDay = startDate.getDay(); // 0 = domenica, 1 = lunedì, ...
+        const currentDay = date.getDay();
+        return startDay === currentDay;
+      }
+      
+      // Per i contatori mensili, controlla se è lo stesso giorno del mese
+      if (counter.type === 'monthly') {
+        const startDayOfMonth = startDate.getDate(); // 1-31
+        const currentDayOfMonth = date.getDate();
+        return startDayOfMonth === currentDayOfMonth;
+      }
+      
+      // Per i contatori cumulativi, sempre validi entro il range
+      return true;
     } catch (error) {
       console.error("Errore nel parsing delle date:", error);
       return false;
     }
-  }).map((counter: any) => {
+  };
+
+  // Filtra i contatori attivi per la data selezionata
+  const selectedDateCounters = counters.filter((counter: any) => 
+    isCounterActiveForDate(counter, selectedDate)
+  ).map((counter: any) => {
     // Per i giorni futuri o passati, modifica il valore del contatore a 0
     if (!isSelectedDateToday) {
       return { ...counter, displayValue: 0 };
@@ -109,22 +134,7 @@ const CalendarPage = () => {
   };
 
   const hasCountersOnDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return counters.some((counter: any) => {
-      if (counter.type !== 'daily') return false;
-      
-      // Aggiunto controllo per startDate undefined
-      if (!counter.startDate) return false;
-      
-      try {
-        const isAfterStart = dateStr >= counter.startDate;
-        const isBeforeEnd = counter.endDate ? dateStr <= counter.endDate : true;
-        
-        return isAfterStart && isBeforeEnd;
-      } catch (error) {
-        return false;
-      }
-    });
+    return counters.some((counter: any) => isCounterActiveForDate(counter, date));
   };
 
   // Verificiamo se il giorno selezionato ha eventi o contatori
@@ -204,12 +214,6 @@ const CalendarPage = () => {
                       ${isSelected ? 'bg-primary-600' : 'bg-primary-400'}
                     `} />
                   )}
-                  {hasCounters && (
-                    <span className={`
-                      w-1.5 h-1.5 rounded-full
-                      ${isSelected ? 'bg-amber-600' : 'bg-amber-400'}
-                    `} />
-                  )}
                 </div>
               </button>
             );
@@ -252,7 +256,7 @@ const CalendarPage = () => {
         {/* Sezione dei contatori giornalieri */}
         {selectedDateCounters.length > 0 && (
           <div>
-            <h3 className="text-md font-medium text-gray-700 mb-3">Contatori Giornalieri</h3>
+            <h3 className="text-md font-medium text-gray-700 mb-3">Contatori</h3>
             <div className="space-y-3">
               {selectedDateCounters.map((counter: any) => (
                 <CounterItem

@@ -153,31 +153,37 @@ const CounterItem: React.FC<CounterItemProps> = ({
         {/* Controlli del contatore */}
         <div className="flex items-center justify-end mt-3 gap-2">
           <Button
-            variant="outline"
-            size="sm"
+            variant="glass"
+            size="icon"
             disabled={isReadOnly || counter.currentValue <= 0}
             onClick={handleDecrement}
             aria-label="Decrementa"
-            className="bg-white/70"
+            className="bg-white/90 shadow-sm hover:bg-red-50 transition-colors h-10 w-10 rounded-full border border-gray-200"
           >
-            <Minus className="h-4 w-4" />
+            <Minus className="h-5 w-5 text-red-500" />
           </Button>
           
-          <div className="w-16 h-10 bg-white/70 rounded-lg border border-gray-200 flex items-center justify-center shadow-sm">
-            <span className="font-bold text-xl text-gray-800">
+          <div className="w-20 h-12 bg-white/90 rounded-xl border border-gray-200 flex items-center justify-center shadow-md overflow-hidden">
+            <motion.span
+              key={counter.currentValue}
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="font-bold text-2xl text-gray-800"
+            >
               {counter.currentValue}
-            </span>
+            </motion.span>
           </div>
           
           <Button
-            variant="outline"
-            size="sm"
+            variant="glass"
+            size="icon"
             disabled={isReadOnly}
             onClick={handleIncrement}
             aria-label="Incrementa"
-            className="bg-white/70"
+            className="bg-white/90 shadow-sm hover:bg-green-50 transition-colors h-10 w-10 rounded-full border border-gray-200"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5 text-green-500" />
           </Button>
         </div>
       </div>
