@@ -13,6 +13,10 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  :root.dark-mode body {
+    @apply bg-dark-background-light text-dark-text-primary;
+  }
+
   h1, h2, h3, h4, h5 {
     @apply font-display font-semibold;
   }
@@ -20,6 +24,10 @@
   :root {
     --radius-card: 1.5rem;
     --shadow-colored: 0 8px 30px rgba(14, 165, 233, 0.15);
+  }
+
+  :root.dark-mode {
+    --shadow-colored: 0 8px 30px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -29,20 +37,40 @@
     @apply relative bg-background-card rounded-2xl shadow-card border border-gray-100/50 transition-all duration-300 overflow-hidden;
   }
   
+  :root.dark-mode .card {
+    @apply bg-dark-background-card border-gray-800/30 shadow-none;
+  }
+  
   .card-hover {
     @apply hover:shadow-card-hover hover:-translate-y-1 hover:border-gray-200/70;
+  }
+  
+  .dark-mode .card-hover {
+    @apply hover:border-gray-700/30 hover:bg-dark-surface-muted;
   }
   
   .card-glass {
     @apply bg-white/90 backdrop-blur-md border border-white/70;
   }
   
+  .dark-mode .card-glass {
+    @apply bg-dark-surface-light/80 border-gray-800/30;
+  }
+  
   .card-gradient {
     @apply bg-gradient-card;
   }
   
+  .dark-mode .card-gradient {
+    @apply bg-gradient-to-br from-dark-surface-light to-dark-background-alt;
+  }
+  
   .card-colored {
     @apply bg-primary-50 border-primary-100 shadow-colored;
+  }
+  
+  .dark-mode .card-colored {
+    @apply bg-primary-900/20 border-primary-800/30;
   }
   
   /* Form components */
@@ -52,8 +80,18 @@
     @apply rounded-xl border-gray-200 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50 transition-all duration-200;
   }
   
+  .dark-mode .form-input,
+  .dark-mode .form-select,
+  .dark-mode .form-textarea {
+    @apply bg-dark-surface-muted border-gray-700 focus:border-primary-700 focus:ring-primary-800;
+  }
+  
   .form-input-modern {
     @apply bg-gray-50 border-transparent focus:bg-white;
+  }
+  
+  .dark-mode .form-input-modern {
+    @apply bg-dark-surface-dark border-transparent focus:bg-dark-surface-muted;
   }
 
   .form-group {
@@ -63,26 +101,50 @@
   .form-label {
     @apply block text-sm font-medium text-gray-700 mb-1;
   }
+  
+  .dark-mode .form-label {
+    @apply text-dark-text-secondary;
+  }
 
   .form-hint {
     @apply mt-1.5 text-xs text-gray-500;
   }
+  
+  .dark-mode .form-hint {
+    @apply text-dark-text-muted;
+  }
 
   .form-error {
     @apply mt-1.5 text-sm text-red-600;
+  }
+  
+  .dark-mode .form-error {
+    @apply text-red-400;
   }
 
   /* Buttons & Interactive elements */
   .option-button {
     @apply rounded-xl border border-gray-200 text-center transition-all duration-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm;
   }
+  
+  .dark-mode .option-button {
+    @apply border-gray-800 hover:bg-dark-surface-muted hover:border-gray-700;
+  }
 
   .option-button-large {
     @apply rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 hover:shadow-sm;
   }
+  
+  .dark-mode .option-button-large {
+    @apply border-gray-800 hover:bg-dark-surface-muted hover:border-gray-700;
+  }
 
   .option-button-selected {
     @apply bg-primary-50 border-primary-200 shadow-sm text-primary-700;
+  }
+  
+  .dark-mode .option-button-selected {
+    @apply bg-primary-900/30 border-primary-800/40 text-primary-300;
   }
   
   /* Containers */
@@ -95,12 +157,20 @@
     @apply bg-white/90 backdrop-blur-md border border-white/60 shadow-card;
   }
   
+  :root.dark-mode .glass-effect {
+    @apply bg-dark-surface-light/80 backdrop-blur-md border border-gray-800/40 shadow-none;
+  }
+  
   .glass-effect-dark {
     @apply bg-gray-900/80 backdrop-blur-md border border-gray-800/70;
   }
   
   .glass-effect-colored {
     @apply bg-primary-50/90 backdrop-blur-md border border-primary-100/70;
+  }
+  
+  .dark-mode .glass-effect-colored {
+    @apply bg-primary-900/30 border-primary-800/40;
   }
   
   /* Badges */

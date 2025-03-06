@@ -3,6 +3,7 @@ module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -48,7 +49,7 @@ module.exports = {
         background: {
           light: '#f9fafb',
           card: '#ffffff',
-          dark: '#f3f4f6',
+          dark: '#111827',
           alt: '#eff6ff',
         },
         surface: {
@@ -56,6 +57,24 @@ module.exports = {
           dark: '#111827',
           muted: '#f9fafb',
           accent: '#f0f9ff',
+        },
+        dark: {
+          background: {
+            light: '#121212',
+            card: '#1e1e1e',
+            alt: '#1a1a1a',
+          },
+          surface: {
+            light: '#1e1e1e',
+            dark: '#0f0f0f',
+            muted: '#252525',
+            accent: '#2a2a2a',
+          },
+          text: {
+            primary: '#f5f5f5',
+            secondary: '#a0a0a0',
+            muted: '#6b6b6b',
+          },
         },
       },
       fontFamily: {
